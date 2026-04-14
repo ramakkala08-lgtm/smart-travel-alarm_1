@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Smart Travel Alarm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════
+   RESET & TOKENS
+══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button { cursor: pointer; font: inherit; border: none; background: none; }
+svg, img { display: block; }
+input { font: inherit; }
+
+:root {
+  --bg:    #080c12;
+  --s1:    #0d1421;
+  --s2:    #121c2d;
+  --s3:    #192435;
+  --b1:    rgba(255,255,255,0.06);
+  --b2:    rgba(255,255,255,0.11);
+  --b3:    rgba(255,255,255,0.18);
+  --text:  #d8e4f5;
+  --sub:   #7f93ae;
+  --muted: #415168;
+  --cyan:  #22d3ee;
+  --cy-d:  rgba(34,211,238,0.10);
+  --cy-m:  rgba(34,211,238,0.40);
+  --cy-g:  rgba(34,211,238,0.22);
+  --amb:   #f59e0b;
+  --am-d:  rgba(245,158,11,0.12);
+  --grn:   #34d399;
+  --red:   #f43f5e;
+  --re-d:  rgba(244,63,94,0.12);
+  --re-g:  rgba(244,63,94,0.28);
+  --r:     14px;
+  --r2:    20px;
+  --r3:    999px;
+  --ff:    'Syne', system-ui, sans-serif;
+  --fm:    'Space Mono', monospace;
+  --ease:  cubic-bezier(0.22,1,0.36,1);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--ff);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 80px;
+  background-image:
+    radial-gradient(ellipse 90% 40% at 50% -2%, rgba(34,211,238,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 90% 92%, rgba(99,102,241,0.05) 0%, transparent 55%);
+}
+
+/* ══════════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════════ */
+.hdr {
+  position: sticky; top: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 22px;
+  background: rgba(8,12,18,0.88);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--b1);
+}
+.hdr-logo { display: flex; align-items: center; gap: 9px; font-size: 1rem; font-weight: 800; letter-spacing: -.02em; }
+.hdr-icon {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--cy-d); border: 1px solid rgba(34,211,238,0.22);
+  color: var(--cyan); font-size: .95rem;
+  display: flex; align-items: center; justify-content: center;
+  animation: spin 14s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.hdr-tag { font-size: .65rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+/* ══════════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════════ */
+.wrap {
+  max-width: 540px; margin: 0 auto;
+  padding: 28px 18px 0;
+  display: flex; flex-direction: column; gap: 18px;
+}
+
+.divider {
+  display: flex; align-items: center; gap: 12px; padding: 0 2px;
+}
+.divider span { font-size: .62rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); white-space: nowrap; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--b2); }
+
+/* ══════════════════════════════════════════════
+   CARDS
+══════════════════════════════════════════════ */
+.card {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: var(--r2);
+  padding: 22px 22px 24px;
+  transition: border-color 300ms var(--ease);
+}
+.card.lit { border-color: rgba(34,211,238,0.15); box-shadow: 0 0 0 1px rgba(34,211,238,0.05), 0 16px 48px rgba(0,0,0,0.4); }
+
+.eyebrow { font-size: .62rem; text-transform: uppercase; letter-spacing: .15em; color: var(--cyan); margin-bottom: 4px; }
+.card-title { font-size: 1.25rem; font-weight: 800; letter-spacing: -.022em; margin-bottom: 18px; line-height: 1.2; }
+
+/* ══════════════════════════════════════════════
+   SEARCH
+══════════════════════════════════════════════ */
+.search-wrap { position: relative; }
+.search-bar {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--s2); border: 1.5px solid var(--b2);
+  border-radius: var(--r); padding: 0 13px;
+  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+.search-bar:focus-within { border-color: var(--cy-m); box-shadow: 0 0 0 3px var(--cy-d), 0 8px 32px rgba(0,0,0,0.28); }
+.s-ico { color: var(--muted); display: flex; flex-shrink: 0; transition: color 200ms; }
+.search-bar:focus-within .s-ico { color: var(--cyan); }
+
+#searchInput {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-family: var(--ff); font-size: .93rem; font-weight: 500;
+  padding: 14px 0; caret-color: var(--cyan); min-width: 0;
+}
+#searchInput::placeholder { color: var(--muted); font-weight: 400; }
+
+.spinner { width: 14px; height: 14px; flex-shrink: 0; border: 2px solid var(--b2); border-top-color: var(--cyan); border-radius: 50%; display: none; }
+.spinner.on { display: block; animation: spin .6s linear infinite; }
+
+.clr-btn { color: var(--muted); width: 24px; height: 24px; border-radius: 7px; display: none; align-items: center; justify-content: center; transition: color 130ms, background 130ms; }
+.clr-btn.on { display: flex; }
+.clr-btn:hover { color: var(--text); background: rgba(255,255,255,0.07); }
+
+/* Dropdown */
+.dropdown { position: absolute; top: calc(100% + 7px); left: 0; right: 0; z-index: 500; background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r); overflow: hidden; box-shadow: 0 22px 55px rgba(0,0,0,0.55); display: none; }
+.dropdown.open { display: block; animation: dropIn 150ms var(--ease) both; }
+@keyframes dropIn { from { opacity:0; transform: translateY(-5px) scale(.985); } to { opacity:1; transform: translateY(0) scale(1); } }
+
+.sug { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; cursor: pointer; border-bottom: 1px solid var(--b1); transition: background 90ms; user-select: none; }
+.sug:last-child { border-bottom: none; }
+.sug:hover, .sug.hi { background: var(--s2); }
+.sug-pin { width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; background: var(--cy-d); color: var(--cyan); display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.sug-body { flex: 1; min-width: 0; }
+.sug-main { font-size: .86rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sug-sub  { font-size: .72rem; color: var(--sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sug-msg  { padding: 15px; text-align: center; font-size: .8rem; color: var(--muted); }
+
+/* ══════════════════════════════════════════════
+   TASK 2 — COORDINATE INPUT
+══════════════════════════════════════════════ */
+.coord-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 13px; font-size: .74rem; font-weight: 600; color: var(--sub);
+  transition: color 150ms;
+}
+.coord-toggle:hover { color: var(--cyan); }
+.coord-toggle .arr { transition: transform 250ms var(--ease); }
+.coord-toggle.open .arr { transform: rotate(180deg); }
+
+.coord-panel {
+  margin-top: 10px; overflow: hidden;
+  max-height: 0; opacity: 0;
+  transition: max-height 320ms var(--ease), opacity 280ms ease;
+}
+.coord-panel.open { max-height: 220px; opacity: 1; }
+
+.coord-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.c-field { display: flex; flex-direction: column; gap: 5px; }
+.c-field label { font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.c-field input {
+  background: var(--s2); border: 1.5px solid var(--b2);
+  border-radius: var(--r); color: var(--text); font-family: var(--fm); font-size: .82rem;
+  padding: 11px 12px; outline: none;
+  transition: border-color 180ms, box-shadow 180ms;
+  -moz-appearance: textfield;
+}
+.c-field input::-webkit-inner-spin-button,
+.c-field input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.c-field input:focus { border-color: var(--cy-m); box-shadow: 0 0 0 3px var(--cy-d); }
+.c-field input.err { border-color: var(--red) !important; box-shadow: 0 0 0 3px var(--re-d) !important; }
+
+.coord-use-btn {
+  width: 100%; padding: 11px 16px;
+  background: var(--s3); border: 1.5px solid var(--b2);
+  border-radius: var(--r); color: var(--text);
+  font-family: var(--ff); font-size: .82rem; font-weight: 700;
+  transition: all 160ms var(--ease);
+}
+.coord-use-btn:hover { border-color: var(--cy-m); color: var(--cyan); background: var(--cy-d); }
+.coord-err { font-size: .73rem; color: var(--red); display: none; margin-top: 7px; }
+.coord-err.on { display: block; }
+
+/* ══════════════════════════════════════════════
+   CHIP
+══════════════════════════════════════════════ */
+.chip { display: none; align-items: center; gap: 11px; margin-top: 13px; background: var(--s2); border: 1px solid rgba(34,211,238,0.18); border-radius: var(--r); padding: 11px 14px; }
+.chip.on { display: flex; animation: fadeUp 220ms var(--ease) both; }
+@keyframes fadeUp { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+.chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--grn); box-shadow: 0 0 7px rgba(52,211,153,.5); animation: blink 2.4s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.chip-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.chip-name { font-size: .83rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip-coords { font-family: var(--fm); font-size: .62rem; color: var(--cyan); letter-spacing: .02em; }
+.chip-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--b2); color: var(--sub); font-size: .73rem; font-weight: 700; padding: 5px 11px; border-radius: var(--r3); flex-shrink: 0; transition: all 130ms; }
+.chip-btn:hover { color: var(--text); background: rgba(255,255,255,0.09); }
+
+/* ══════════════════════════════════════════════
+   TRACKING CARD
+══════════════════════════════════════════════ */
+#alarmCard { display: flex; flex-direction: column; gap: 20px; }
+
+
+
+/* Ring */
+.ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.ring {
+  width: 172px; height: 172px; border-radius: 50%;
+  background: var(--s2); border: 2px solid var(--b2);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; transition: border-color 400ms, box-shadow 400ms;
+}
+.ring::before { content: ''; position: absolute; inset: -7px; border-radius: 50%; border: 1px solid rgba(34,211,238,.05); pointer-events: none; }
+.ring.tracking { border-color: rgba(34,211,238,.5); box-shadow: 0 0 0 6px var(--cy-d), 0 0 32px var(--cy-g); animation: pulse 2.2s ease-in-out infinite; }
+.ring.near     { border-color: var(--amb); box-shadow: 0 0 0 6px var(--am-d), 0 0 38px rgba(245,158,11,.28); animation: pulse .8s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.035)} }
+
+.ring-face { text-align: center; }
+.ring-dist { font-family: var(--fm); font-size: 1.9rem; font-weight: 700; color: var(--text); line-height: 1; transition: color 350ms; }
+.ring.tracking .ring-dist { color: var(--cyan); }
+.ring.near     .ring-dist { color: var(--amb); }
+.ring-lbl { font-size: .62rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-top: 4px; }
+.ring-caption { font-size: .78rem; color: var(--sub); text-align: center; max-width: 250px; min-height: 1.15em; }
+
+/* Pills */
+.ctl-lbl { font-size: .62rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: 9px; }
+.pills { display: flex; flex-wrap: wrap; gap: 7px; }
+.pill { background: var(--s2); border: 1.5px solid var(--b2); color: var(--sub); font-family: var(--ff); font-size: .8rem; font-weight: 600; padding: 7px 15px; border-radius: var(--r3); transition: all 150ms var(--ease); }
+.pill:hover { color: var(--text); border-color: var(--b3); }
+.pill.on { background: var(--cy-d); border-color: rgba(34,211,238,.42); color: var(--cyan); }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; }
+.stat { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 12px 11px; }
+.stat-lbl { font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: block; margin-bottom: 4px; }
+.stat-val { font-family: var(--fm); font-size: .8rem; font-weight: 700; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ══════════════════════════════════════════════
+   TASK 3 — CURRENT LOCATION
+══════════════════════════════════════════════ */
+.loc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+.loc-title { font-size: .62rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.live-dot {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted);
+}
+.live-dot::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--muted); transition: background 300ms, box-shadow 300ms; }
+.live-dot.on::before { background: var(--grn); box-shadow: 0 0 6px rgba(52,211,153,.6); animation: blink 1.8s ease-in-out infinite; }
+.live-dot.on { color: var(--grn); }
+
+.loc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.loc-box { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 12px 13px; transition: border-color 300ms; }
+.loc-box.on { border-color: rgba(34,211,238,0.18); }
+.loc-box-lbl { font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: block; margin-bottom: 4px; }
+.loc-box-val { font-family: var(--fm); font-size: .8rem; font-weight: 700; color: var(--sub); display: block; transition: color 300ms; }
+.loc-box.on .loc-box-val { color: var(--cyan); }
+
+/* Start button */
+.start-btn {
+  width: 100%; padding: 17px 22px;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  border-radius: var(--r); font-family: var(--ff); font-size: .95rem; font-weight: 800; letter-spacing: .01em;
+  background: linear-gradient(135deg,#22d3ee,#0891b2); color: #040d12;
+  box-shadow: 0 8px 32px rgba(34,211,238,.26);
+  transition: transform 180ms var(--ease), box-shadow 180ms var(--ease);
+  position: relative; overflow: hidden;
+}
+.start-btn::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,.07); opacity:0; transition:opacity 140ms; }
+.start-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 44px rgba(34,211,238,.33); }
+.start-btn:hover::after { opacity:1; }
+.start-btn:active { transform: translateY(0); }
+.start-btn.stop { background: linear-gradient(135deg,#f43f5e,#be123c); box-shadow: 0 8px 32px var(--re-g); }
+.start-btn.stop:hover { box-shadow: 0 14px 44px var(--re-g); }
+
+.tip { font-size: .73rem; color: var(--muted); text-align: center; line-height: 1.6; }
+
+/* ══════════════════════════════════════════════
+   ALARM OVERLAY
+══════════════════════════════════════════════ */
+#alarmOverlay { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; padding: 24px; animation: flash .5s ease-in-out infinite alternate; }
+#alarmOverlay.on { display: flex; }
+@keyframes flash { from { background: rgba(8,12,18,.96); } to { background: rgba(28,4,9,.97); } }
+.alarm-pulse { position: absolute; top: 50%; left: 50%; width: 280px; height: 280px; border-radius: 50%; border: 2px solid var(--red); opacity: 0; animation: pexp 1.7s ease-out infinite; transform: translate(-50%,-50%); pointer-events: none; }
+@keyframes pexp { 0% { transform: translate(-50%,-50%) scale(.5); opacity:.5; } 100% { transform: translate(-50%,-50%) scale(1.7); opacity:0; } }
+.alarm-box { position: relative; z-index: 1; max-width: 310px; width: 100%; background: rgba(14,5,8,.80); border: 1px solid rgba(244,63,94,.22); border-radius: 24px; padding: 36px 24px 30px; text-align: center; backdrop-filter: blur(24px); box-shadow: 0 0 80px rgba(244,63,94,.10); display: flex; flex-direction: column; align-items: center; gap: 13px; }
+.alarm-bell { font-size: 3.2rem; animation: shake .32s ease-in-out infinite; line-height: 1; }
+@keyframes shake { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }
+.alarm-title { font-size: clamp(2rem,7vw,3rem); font-weight: 900; color: var(--red); letter-spacing: .04em; line-height: 1; text-shadow: 0 0 40px var(--re-g); }
+.alarm-sub  { font-size: .86rem; color: var(--sub); }
+.alarm-dest { font-size: .97rem; font-weight: 700; line-height: 1.35; }
+.dismiss-btn { margin-top: 6px; padding: 14px 38px; border-radius: var(--r3); background: var(--red); color: #fff; font-family: var(--ff); font-size: .88rem; font-weight: 800; letter-spacing: .04em; box-shadow: 0 8px 26px var(--re-g); transition: transform 160ms, box-shadow 160ms; }
+.dismiss-btn:hover { transform: scale(1.06); box-shadow: 0 14px 38px var(--re-g); }
+.dismiss-btn:active { transform: scale(.97); }
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════ */
+@media(max-width:440px) {
+  .wrap { padding: 18px 13px 0; gap: 14px; }
+  .card { padding: 17px 15px 19px; }
+  .ring { width: 152px; height: 152px; }
+  .ring-dist { font-size: 1.65rem; }
+  .stats { gap: 7px; }
+  .stat { padding: 10px 8px; }
+  .coord-grid { grid-template-columns: 1fr; }
+  .loc-grid { grid-template-columns: 1fr; }
+}
+@media(max-width:340px) {
+  .pills { gap: 5px; }
+  .pill  { padding: 6px 11px; font-size: .76rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-logo">
+    <div class="hdr-icon">◎</div>
+    TravelAlarm
+  </div>
+  <span class="hdr-tag">Never miss your stop</span>
+</header>
+
+<!-- MAIN — both sections always on screen -->
+<main class="wrap">
+
+  <!-- ── 1. DESTINATION CARD ──────────────────────── -->
+  <div class="card" id="destCard">
+    <p class="eyebrow">Step 1 — Destination</p>
+    <h1 class="card-title">Where are you headed?</h1>
+
+    <!-- Autocomplete search -->
+    <div class="search-wrap" id="searchWrap">
+      <div class="search-bar">
+        <span class="s-ico">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </span>
+        <input id="searchInput" type="text" placeholder="Search a place — e.g. NIT Warangal" autocomplete="off" spellcheck="false">
+        <div class="spinner" id="spinner"></div>
+        <button class="clr-btn" id="clrBtn" aria-label="Clear">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="dropdown" id="dropdown"></div>
+    </div>
+
+    <!-- TASK 2: manual coordinates (collapsible) -->
+    <button class="coord-toggle" id="coordToggle">
+      <svg class="arr" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+      Enter coordinates manually
+    </button>
+
+    <div class="coord-panel" id="coordPanel">
+      <div class="coord-grid">
+        <div class="c-field">
+          <label for="latInput">Latitude (−90 to 90)</label>
+          <input id="latInput" type="number" step="any" placeholder="e.g. 17.9860" min="-90" max="90">
+        </div>
+        <div class="c-field">
+          <label for="lonInput">Longitude (−180 to 180)</label>
+          <input id="lonInput" type="number" step="any" placeholder="e.g. 79.5308" min="-180" max="180">
+        </div>
+      </div>
+      <button class="coord-use-btn" id="coordUseBtn">📍 Use These Coordinates</button>
+      <p class="coord-err" id="coordErr"></p>
+    </div>
+
+    <!-- Selected destination chip -->
+    <div class="chip" id="chip">
+      <div class="chip-dot"></div>
+      <div class="chip-info">
+        <span class="chip-name"   id="chipName"></span>
+        <span class="chip-coords" id="chipCoords"></span>
+      </div>
+      <button class="chip-btn" id="chipChangeBtn">Change</button>
+    </div>
+  </div>
+
+  <div class="divider"><span>Step 2 — Tracking</span></div>
+
+  <!-- ── 2. TRACKING CARD ─────────────────────────── -->
+  <div class="card" id="alarmCard">
+
+
+    <div class="ring-wrap">
+      <div class="ring" id="ring">
+        <div class="ring-face">
+          <div class="ring-dist" id="ringDist">—</div>
+          <div class="ring-lbl">away</div>
+        </div>
+      </div>
+      <p class="ring-caption" id="ringCaption">Set a destination to begin</p>
+    </div>
+
+    <!-- Alert threshold -->
+    <div>
+      <p class="ctl-lbl">Alert me when within</p>
+      <div class="pills">
+        <button class="pill"    data-m="300">300 m</button>
+        <button class="pill on" data-m="500">500 m</button>
+        <button class="pill"    data-m="800">800 m</button>
+        <button class="pill"    data-m="1000">1 km</button>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-lbl">Status</span>
+        <span class="stat-val" id="stStatus">Idle</span>
+      </div>
+      <div class="stat">
+        <span class="stat-lbl">Alert at</span>
+        <span class="stat-val" id="stAlert">500 m</span>
+      </div>
+      <div class="stat">
+        <span class="stat-lbl">GPS ±</span>
+        <span class="stat-val" id="stGps">—</span>
+      </div>
+    </div>
+
+    <!-- TASK 3: current location display -->
+    <div>
+      <div class="loc-head">
+        <span class="loc-title">My current location</span>
+        <span class="live-dot" id="liveDot">not tracking</span>
+      </div>
+      <div class="loc-grid">
+        <div class="loc-box" id="myLatBox">
+          <span class="loc-box-lbl">Latitude</span>
+          <span class="loc-box-val" id="myLat">—</span>
+        </div>
+        <div class="loc-box" id="myLonBox">
+          <span class="loc-box-lbl">Longitude</span>
+          <span class="loc-box-val" id="myLon">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <button class="start-btn" id="startBtn">
+      <svg id="btnIco" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+      <span id="btnLbl">Start Alarm</span>
+    </button>
+
+    <p class="tip" id="tipTxt">Keep this tab open and your screen on while traveling.</p>
+  </div>
+
+</main>
+
+<!-- ALARM OVERLAY -->
+<div id="alarmOverlay" role="alertdialog" aria-modal="true" aria-live="assertive">
+  <div class="alarm-pulse"></div>
+  <div class="alarm-box">
+    <div class="alarm-bell">🔔</div>
+    <div class="alarm-title">WAKE UP!</div>
+    <p class="alarm-sub">You're approaching your destination</p>
+    <p class="alarm-dest" id="alarmDest">—</p>
+    <button class="dismiss-btn" id="dismissBtn">Dismiss Alarm</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ── STATE ───────────────────────────────────────── */
+const S = {
+  dest:      null,
+  threshold: 500,
+  tracking:  false,
+  watchId:   null,
+  fired:     false,
+  audioCtx:  null,
+  beepIv:    null,
+};
+
+/* ── DOM CACHE ───────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const D = {
+  input:       $('searchInput'),
+  spinner:     $('spinner'),
+  clrBtn:      $('clrBtn'),
+  dropdown:    $('dropdown'),
+  coordToggle: $('coordToggle'),
+  coordPanel:  $('coordPanel'),
+  latInput:    $('latInput'),
+  lonInput:    $('lonInput'),
+  coordUseBtn: $('coordUseBtn'),
+  coordErr:    $('coordErr'),
+  chip:        $('chip'),
+  chipName:    $('chipName'),
+  chipCoords:  $('chipCoords'),
+  chipChange:  $('chipChangeBtn'),
+  ring:        $('ring'),
+  ringDist:    $('ringDist'),
+  ringCap:     $('ringCaption'),
+  stStatus:    $('stStatus'),
+  stAlert:     $('stAlert'),
+  stGps:       $('stGps'),
+  myLat:       $('myLat'),
+  myLon:       $('myLon'),
+  myLatBox:    $('myLatBox'),
+  myLonBox:    $('myLonBox'),
+  liveDot:     $('liveDot'),
+  startBtn:    $('startBtn'),
+  btnIco:      $('btnIco'),
+  btnLbl:      $('btnLbl'),
+  tipTxt:      $('tipTxt'),
+  overlay:     $('alarmOverlay'),
+  alarmDest:   $('alarmDest'),
+  dismissBtn:  $('dismissBtn'),
+};
+
+/* ══════════════════════════════════════════════════
+   AUTOCOMPLETE — Photon by Komoot (free, no key)
+══════════════════════════════════════════════════ */
+let timer = null, preds = [], hlIdx = -1;
+
+D.input.addEventListener('input', () => {
+  const q = D.input.value.trim();
+  D.clrBtn.classList.toggle('on', q.length > 0);
+  if (q.length < 2) { closeDrop(); return; }
+  clearTimeout(timer);
+  showSpin(true);
+  timer = setTimeout(() => fetchPlaces(q), 300);
+});
+
+D.input.addEventListener('keydown', e => {
+  const rows = D.dropdown.querySelectorAll('.sug');
+  if (!rows.length) return;
+  if      (e.key === 'ArrowDown')           { e.preventDefault(); hlIdx = Math.min(hlIdx+1, rows.length-1); hl(rows); }
+  else if (e.key === 'ArrowUp')             { e.preventDefault(); hlIdx = Math.max(hlIdx-1, 0); hl(rows); }
+  else if (e.key === 'Enter' && hlIdx >= 0) { e.preventDefault(); pickPred(hlIdx); }
+  else if (e.key === 'Escape')              { closeDrop(); D.input.blur(); }
+});
+
+document.addEventListener('mousedown', e => {
+  if (!e.target.closest('#searchWrap') && !e.target.closest('#coordPanel')) closeDrop();
+});
+
+async function fetchPlaces(q) {
+  try {
+    const BBOX = '68.1,6.5,97.4,35.7'; // India bounding box
+    const url  = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=en&bbox=${BBOX}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    showSpin(false);
+
+    const features = data?.features;
+    if (!features || features.length === 0) {
+      D.dropdown.innerHTML = '<div class="sug-msg">No places found. Try a different name.</div>';
+      openDrop(); return;
+    }
+
+    preds = features; hlIdx = -1;
+    D.dropdown.innerHTML = '';
+    features.forEach((feat, i) => {
+      const p   = feat.properties;
+      const main = p.name || p.street || p.city || 'Unknown';
+      const sub  = [p.city || p.town || p.village, p.state].filter(Boolean).join(', ');
+      const row  = document.createElement('div');
+      row.className = 'sug';
+      row.innerHTML = `
+        <div class="sug-pin">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>
+        <div class="sug-body">
+          <div class="sug-main">${esc(main)}</div>
+          ${sub ? `<div class="sug-sub">${esc(sub)}</div>` : ''}
+        </div>`;
+      row.addEventListener('mousedown', e => { e.preventDefault(); pickPred(i); });
+      D.dropdown.appendChild(row);
+    });
+    openDrop();
+  } catch (err) {
+    showSpin(false);
+    D.dropdown.innerHTML = '<div class="sug-msg">Search unavailable. Check your connection.</div>';
+    openDrop();
+    console.error('Photon error:', err);
+  }
+}
+
+function pickPred(i) {
+  const feat = preds[i]; if (!feat) return;
+  const p   = feat.properties;
+  const lon = feat.geometry.coordinates[0];
+  const lat = feat.geometry.coordinates[1];
+  const name = [p.name, p.city || p.town || p.village, p.state].filter(Boolean).join(', ');
+  D.input.value = name;
+  D.clrBtn.classList.add('on');
+  closeDrop();
+  setDestination({ name, lat, lon });
+}
+
+function hl(rows) { rows.forEach((r,i) => r.classList.toggle('hi', i === hlIdx)); }
+function openDrop()  { D.dropdown.classList.add('open'); }
+function closeDrop() { D.dropdown.classList.remove('open'); preds=[]; hlIdx=-1; }
+function showSpin(v) { D.spinner.classList.toggle('on', v); }
+
+/* ══════════════════════════════════════════════════
+   TASK 2 — COORDINATE TOGGLE + USE
+══════════════════════════════════════════════════ */
+D.coordToggle.addEventListener('click', () => {
+  const open = D.coordPanel.classList.toggle('open');
+  D.coordToggle.classList.toggle('open', open);
+});
+
+D.coordUseBtn.addEventListener('click', () => {
+  const lat = parseFloat(D.latInput.value);
+  const lon = parseFloat(D.lonInput.value);
+
+  // reset errors
+  D.latInput.classList.remove('err');
+  D.lonInput.classList.remove('err');
+  D.coordErr.classList.remove('on');
+
+  let msg = '';
+  if (isNaN(lat) || lat < -90  || lat > 90)   { D.latInput.classList.add('err'); msg = 'Latitude must be between −90 and 90.'; }
+  if (isNaN(lon) || lon < -180 || lon > 180)   { D.lonInput.classList.add('err'); msg = msg || 'Longitude must be between −180 and 180.'; }
+  if (msg) { D.coordErr.textContent = msg; D.coordErr.classList.add('on'); return; }
+
+  const name = `Custom: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+  setDestination({ name, lat, lon });
+  D.coordPanel.classList.remove('open');
+  D.coordToggle.classList.remove('open');
+  D.latInput.value = '';
+  D.lonInput.value = '';
+});
+
+/* ══════════════════════════════════════════════════
+   SET DESTINATION — shared entry point
+══════════════════════════════════════════════════ */
+function setDestination({ name, lat, lon }) {
+  S.dest = { name, lat, lon };
+  console.log('📍 Destination set:', S.dest);
+
+  D.chipName.textContent   = name;
+  D.chipCoords.textContent = `${lat.toFixed(5)},  ${lon.toFixed(5)}`;
+  D.chip.classList.add('on');
+  D.ringCap.textContent = 'Ready — press Start Alarm below';
+
+  // highlight dest card
+  $('destCard').classList.add('lit');
+
+  // smooth scroll to tracking section
+  setTimeout(() => $('alarmCard').scrollIntoView({ behavior:'smooth', block:'start' }), 120);
+}
+
+/* ══════════════════════════════════════════════════
+   CLEAR / RESET
+══════════════════════════════════════════════════ */
+D.clrBtn.addEventListener('click', clearSearch);
+D.chipChange.addEventListener('click', resetAll);
+
+function clearSearch() {
+  D.input.value=''; D.clrBtn.classList.remove('on'); closeDrop(); D.input.focus();
+}
+function resetAll() {
+  if (S.tracking) stopTracking();
+  S.dest = null;
+  D.chip.classList.remove('on');
+  $('destCard').classList.remove('lit');
+  D.ringCap.textContent  = 'Set a destination to begin';
+  D.ringDist.textContent = '—';
+  D.ring.classList.remove('tracking','near');
+  clearSearch();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+/* ══════════════════════════════════════════════════
+   THRESHOLD PILLS
+══════════════════════════════════════════════════ */
+document.querySelectorAll('.pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(x => x.classList.remove('on'));
+    p.classList.add('on');
+    S.threshold = parseInt(p.dataset.m);
+    D.stAlert.textContent = fmtDist(S.threshold);
+  });
+});
+
+/* ══════════════════════════════════════════════════
+   TRACKING
+══════════════════════════════════════════════════ */
+D.startBtn.addEventListener('click', () => S.tracking ? stopTracking() : startTracking());
+
+function startTracking() {
+  if (!S.dest)                 { D.ringCap.textContent = 'Please select a destination first.'; return; }
+  if (!navigator.geolocation)  { D.ringCap.textContent = 'GPS not supported by your browser.'; return; }
+
+  S.tracking=true; S.fired=false;
+  setBtnMode('stop');
+  D.stStatus.textContent = 'Active';
+  D.ringCap.textContent  = 'Acquiring GPS signal…';
+  D.ring.classList.add('tracking');
+  D.tipTxt.textContent   = '✓ Live tracking active. Keep screen on.';
+
+  S.watchId = navigator.geolocation.watchPosition(
+    onPos, onPosErr,
+    { enableHighAccuracy:true, maximumAge:2000, timeout:12000 }
+  );
+}
+
+function stopTracking() {
+  if (S.watchId !== null) { navigator.geolocation.clearWatch(S.watchId); S.watchId=null; }
+  stopBeep();
+  S.tracking=false; S.fired=false;
+  setBtnMode('start');
+  D.stStatus.textContent  = 'Idle';
+  D.stGps.textContent     = '—';
+  D.ringDist.textContent  = '—';
+  D.ringCap.textContent   = S.dest ? 'Ready — press Start Alarm below' : 'Set a destination to begin';
+  D.ring.classList.remove('tracking','near');
+  D.tipTxt.textContent    = 'Keep this tab open and your screen on while traveling.';
+  // Task 3: clear current location
+  D.myLat.textContent='—'; D.myLon.textContent='—';
+  D.myLatBox.classList.remove('on'); D.myLonBox.classList.remove('on');
+  D.liveDot.className='live-dot'; D.liveDot.textContent='not tracking';
+}
+
+function setBtnMode(mode) {
+  const s = mode==='stop';
+  D.startBtn.classList.toggle('stop', s);
+  D.btnIco.innerHTML = s ? `<rect x="5" y="5" width="14" height="14" rx="2"/>` : `<path d="M5 3l14 9-14 9V3z"/>`;
+  D.btnIco.setAttribute('viewBox','0 0 24 24');
+  D.btnIco.setAttribute('fill','currentColor');
+  D.btnLbl.textContent = s ? 'Stop Alarm' : 'Start Alarm';
+}
+
+/* ══════════════════════════════════════════════════
+   GPS CALLBACK
+══════════════════════════════════════════════════ */
+function onPos(pos) {
+  const { latitude:lat, longitude:lon, accuracy } = pos.coords;
+
+  // Task 3: show current location live
+  D.myLat.textContent = lat.toFixed(6);
+  D.myLon.textContent = lon.toFixed(6);
+  D.myLatBox.classList.add('on'); D.myLonBox.classList.add('on');
+  D.liveDot.className='live-dot on'; D.liveDot.textContent='live';
+
+  D.stGps.textContent = `±${Math.round(accuracy)} m`;
+
+  /* ── HAVERSINE ──────────────────────────────────
+     a = sin²(Δlat/2) + cos(φ1)·cos(φ2)·sin²(Δlon/2)
+     d = R · 2·atan2(√a, √(1−a))  where R = 6 371 000 m
+  ────────────────────────────────────────────── */
+  const dist = haversine(lat, lon, S.dest.lat, S.dest.lon);
+
+  D.ringDist.textContent = fmtDist(dist);
+  D.ringCap.textContent  = `${fmtDist(dist)} to ${S.dest.name.split(',')[0]}`;
+
+  if (dist <= S.threshold * 2.2) {
+    D.ring.classList.add('near'); D.ring.classList.remove('tracking');
+  } else {
+    D.ring.classList.add('tracking'); D.ring.classList.remove('near');
+  }
+
+  console.log(`📡 ${lat.toFixed(5)},${lon.toFixed(5)} | ${Math.round(dist)} m`);
+
+  if (dist <= S.threshold && !S.fired && S.tracking) {
+    S.fired=true; triggerAlarm();
+  }
+}
+
+function onPosErr(err) {
+  const m = { 1:'Location permission denied. Enable it in browser settings.', 2:'GPS unavailable. Try moving outdoors.', 3:'GPS timed out. Check your signal.' };
+  D.ringCap.textContent  = m[err.code] || 'Unknown GPS error.';
+  D.stStatus.textContent = 'Error';
+  console.error('GPS error:', err.code);
+  stopTracking();
+}
+
+/* ══════════════════════════════════════════════════
+   HAVERSINE
+══════════════════════════════════════════════════ */
+function haversine(lat1,lon1,lat2,lon2) {
+  const R=6_371_000, r=d=>d*Math.PI/180;
+  const dL=r(lat2-lat1), dO=r(lon2-lon1);
+  const a=Math.sin(dL/2)**2+Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dO/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+/* ══════════════════════════════════════════════════
+   ALARM
+══════════════════════════════════════════════════ */
+function triggerAlarm() {
+  D.alarmDest.textContent=S.dest.name; D.overlay.classList.add('on');
+  if(navigator.vibrate) navigator.vibrate([600,200,600,200,1200]);
+  startBeep();
+}
+function dismissAlarm() { D.overlay.classList.remove('on'); stopBeep(); stopTracking(); }
+D.dismissBtn.addEventListener('click', dismissAlarm);
+
+/* ══════════════════════════════════════════════════
+   WEB AUDIO BEEP (880 Hz square wave)
+══════════════════════════════════════════════════ */
+function startBeep() {
+  try { S.audioCtx=new(window.AudioContext||window.webkitAudioContext)(); oneBeep(); S.beepIv=setInterval(oneBeep,850); }
+  catch(e){console.warn('Audio:',e);}
+}
+function oneBeep() {
+  if(!S.audioCtx) return;
+  const o=S.audioCtx.createOscillator(), g=S.audioCtx.createGain();
+  o.connect(g); g.connect(S.audioCtx.destination);
+  o.type='square'; o.frequency.setValueAtTime(880,S.audioCtx.currentTime);
+  g.gain.setValueAtTime(0.38,S.audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,S.audioCtx.currentTime+.42);
+  o.start(S.audioCtx.currentTime); o.stop(S.audioCtx.currentTime+.42);
+}
+function stopBeep() {
+  clearInterval(S.beepIv); S.beepIv=null;
+  if(S.audioCtx){S.audioCtx.close().catch(()=>{}); S.audioCtx=null;}
+}
+
+/* ── UTILS ───────────────────────────────────────── */
+function fmtDist(m) { if(m==null||isNaN(m)) return '—'; return m>=1000?(m/1000).toFixed(1)+' km':Math.round(m)+' m'; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>
