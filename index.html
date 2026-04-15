@@ -6,181 +6,351 @@
 <title>Smart Travel Alarm</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-/* ══════════════════════════════════════════════
-   RESET & TOKENS
-══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-button { cursor: pointer; font: inherit; border: none; background: none; }
-svg, img { display: block; }
-input { font: inherit; }
+button  { cursor: pointer; font: inherit; border: none; background: none; }
+input   { font: inherit; }
+svg     { display: block; }
 
+/* ═══════════════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════════════ */
 :root {
-  --bg:    #080c12;
-  --s1:    #0d1421;
-  --s2:    #121c2d;
-  --s3:    #192435;
-  --b1:    rgba(255,255,255,0.06);
-  --b2:    rgba(255,255,255,0.11);
-  --b3:    rgba(255,255,255,0.18);
-  --text:  #d8e4f5;
-  --sub:   #7f93ae;
-  --muted: #415168;
-  --cyan:  #22d3ee;
-  --cy-d:  rgba(34,211,238,0.10);
-  --cy-m:  rgba(34,211,238,0.40);
-  --cy-g:  rgba(34,211,238,0.22);
-  --amb:   #f59e0b;
-  --am-d:  rgba(245,158,11,0.12);
-  --grn:   #34d399;
-  --red:   #f43f5e;
-  --re-d:  rgba(244,63,94,0.12);
-  --re-g:  rgba(244,63,94,0.28);
-  --r:     14px;
-  --r2:    20px;
-  --r3:    999px;
-  --ff:    'Syne', system-ui, sans-serif;
-  --fm:    'Space Mono', monospace;
-  --ease:  cubic-bezier(0.22,1,0.36,1);
+  /* Surfaces */
+  --bg:   #07090f;
+  --s1:   #0c1220;
+  --s2:   #111a2c;
+  --s3:   #172238;
+  --s4:   #1c2a42;
+
+  /* Borders */
+  --b1:   rgba(255,255,255,0.055);
+  --b2:   rgba(255,255,255,0.10);
+  --b3:   rgba(255,255,255,0.17);
+
+  /* Text */
+  --text: #dce8fa;
+  --sub:  #7a90b0;
+  --dim:  #3e5070;
+
+  /* Accent palette */
+  --cyan:   #18d9f0;
+  --cy-d:   rgba(24,217,240,0.09);
+  --cy-m:   rgba(24,217,240,0.38);
+  --cy-g:   rgba(24,217,240,0.20);
+  --cy-str: rgba(24,217,240,0.55);
+
+  /* Semantic */
+  --grn:  #2ecc8e;
+  --amb:  #f5a623;
+  --am-d: rgba(245,166,35,0.12);
+  --red:  #f0455a;
+  --re-d: rgba(240,69,90,0.12);
+  --re-g: rgba(240,69,90,0.28);
+  --blu:  #4a9eff;          /* current-location blue */
+  --bl-d: rgba(74,158,255,0.15);
+
+  /* Geometry */
+  --r:    13px;
+  --r2:   22px;
+  --r3:   999px;
+  --shadow: 0 20px 56px rgba(0,0,0,0.45);
+
+  /* Type */
+  --ff:  'Syne', system-ui, sans-serif;
+  --fm:  'Space Mono', monospace;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* ═══════════════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════════════ */
 html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--ff);
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
-  line-height: 1.55;
+  min-height: 100svh;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   padding-bottom: 80px;
   background-image:
-    radial-gradient(ellipse 90% 40% at 50% -2%, rgba(34,211,238,0.07) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 35% at 90% 92%, rgba(99,102,241,0.05) 0%, transparent 55%);
+    radial-gradient(ellipse 100% 50% at 50% -4%, rgba(24,217,240,0.065) 0%, transparent 58%),
+    radial-gradient(ellipse 55% 40% at 88% 94%,  rgba(74,88,220,0.045) 0%, transparent 55%);
 }
 
-/* ══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    HEADER
-══════════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 .hdr {
-  position: sticky; top: 0; z-index: 200;
+  position: sticky; top: 0; z-index: 300;
+  padding: 0 20px;
+  height: 56px;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 22px;
-  background: rgba(8,12,18,0.88);
-  backdrop-filter: blur(24px);
+  background: rgba(7,9,15,0.90);
+  backdrop-filter: blur(28px);
   border-bottom: 1px solid var(--b1);
 }
-.hdr-logo { display: flex; align-items: center; gap: 9px; font-size: 1rem; font-weight: 800; letter-spacing: -.02em; }
-.hdr-icon {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: var(--cy-d); border: 1px solid rgba(34,211,238,0.22);
-  color: var(--cyan); font-size: .95rem;
-  display: flex; align-items: center; justify-content: center;
-  animation: spin 14s linear infinite;
+.hdr-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-size: .96rem; font-weight: 800; letter-spacing: -.025em;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
-.hdr-tag { font-size: .65rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.hdr-orb {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--cy-d); border: 1px solid rgba(24,217,240,0.2);
+  color: var(--cyan); font-size: .85rem;
+  display: flex; align-items: center; justify-content: center;
+  animation: orb-spin 16s linear infinite;
+}
+@keyframes orb-spin { to { transform: rotate(360deg); } }
 
-/* ══════════════════════════════════════════════
+.hdr-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: var(--r3);
+  background: var(--s2); border: 1px solid var(--b2);
+  font-size: .65rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--sub);
+}
+.hdr-pill-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--dim); transition: background .3s, box-shadow .3s;
+}
+.hdr-pill-dot.live {
+  background: var(--grn);
+  box-shadow: 0 0 7px rgba(46,204,142,.6);
+  animation: dot-blink 2s ease-in-out infinite;
+}
+@keyframes dot-blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+/* ═══════════════════════════════════════════════════
    LAYOUT
-══════════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 .wrap {
   max-width: 540px; margin: 0 auto;
-  padding: 28px 18px 0;
-  display: flex; flex-direction: column; gap: 18px;
+  padding: 24px 16px 0;
+  display: flex; flex-direction: column; gap: 14px;
 }
 
-.divider {
-  display: flex; align-items: center; gap: 12px; padding: 0 2px;
+/* ═══════════════════════════════════════════════════
+   SECTION LABEL
+═══════════════════════════════════════════════════ */
+.sec-label {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 2px;
 }
-.divider span { font-size: .62rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); white-space: nowrap; }
-.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--b2); }
+.sec-label-num {
+  width: 22px; height: 22px; border-radius: 7px;
+  background: var(--cy-d); border: 1px solid var(--cy-m);
+  color: var(--cyan); font-size: .68rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sec-label-text {
+  font-size: .65rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .13em; color: var(--sub);
+}
+.sec-label::after { content: ''; flex: 1; height: 1px; background: var(--b2); }
 
-/* ══════════════════════════════════════════════
-   CARDS
-══════════════════════════════════════════════ */
-.card {
+/* ═══════════════════════════════════════════════════
+   DESTINATION CARD  (map + coord input + chip)
+═══════════════════════════════════════════════════ */
+.dest-card {
   background: var(--s1);
   border: 1px solid var(--b1);
   border-radius: var(--r2);
-  padding: 22px 22px 24px;
-  transition: border-color 300ms var(--ease);
+  overflow: hidden;               /* clips map corners */
+  transition: border-color .3s var(--ease), box-shadow .3s var(--ease);
 }
-.card.lit { border-color: rgba(34,211,238,0.15); box-shadow: 0 0 0 1px rgba(34,211,238,0.05), 0 16px 48px rgba(0,0,0,0.4); }
+.dest-card.set {
+  border-color: rgba(24,217,240,.22);
+  box-shadow: 0 0 0 1px rgba(24,217,240,.06), var(--shadow);
+}
 
-.eyebrow { font-size: .62rem; text-transform: uppercase; letter-spacing: .15em; color: var(--cyan); margin-bottom: 4px; }
-.card-title { font-size: 1.25rem; font-weight: 800; letter-spacing: -.022em; margin-bottom: 18px; line-height: 1.2; }
+/* ── Card header bar ─────────────────────────── */
+.dest-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 0;
+  margin-bottom: 14px;
+}
+.dest-header-left h2 {
+  font-size: 1.15rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.2;
+}
+.dest-header-left p {
+  font-size: .76rem; color: var(--sub); margin-top: 3px;
+}
 
-/* ══════════════════════════════════════════════
-   SEARCH
-══════════════════════════════════════════════ */
-.search-wrap { position: relative; }
-.search-bar {
+/* ── Map search row ──────────────────────────── */
+.map-search-wrap { position: relative; padding: 0 20px; }
+.map-search-bar {
   display: flex; align-items: center; gap: 9px;
   background: var(--s2); border: 1.5px solid var(--b2);
   border-radius: var(--r); padding: 0 13px;
-  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease);
+  transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
 }
-.search-bar:focus-within { border-color: var(--cy-m); box-shadow: 0 0 0 3px var(--cy-d), 0 8px 32px rgba(0,0,0,0.28); }
-.s-ico { color: var(--muted); display: flex; flex-shrink: 0; transition: color 200ms; }
-.search-bar:focus-within .s-ico { color: var(--cyan); }
+.map-search-bar:focus-within {
+  border-color: var(--cy-m);
+  box-shadow: 0 0 0 3px var(--cy-d);
+}
+.s-ico { color: var(--dim); display: flex; flex-shrink: 0; transition: color .2s; }
+.map-search-bar:focus-within .s-ico { color: var(--cyan); }
 
-#searchInput {
+#mapSearchInput {
   flex: 1; background: none; border: none; outline: none;
-  color: var(--text); font-family: var(--ff); font-size: .93rem; font-weight: 500;
-  padding: 14px 0; caret-color: var(--cyan); min-width: 0;
+  color: var(--text); font-family: var(--ff); font-size: .9rem; font-weight: 500;
+  padding: 13px 0; caret-color: var(--cyan); min-width: 0;
 }
-#searchInput::placeholder { color: var(--muted); font-weight: 400; }
+#mapSearchInput::placeholder { color: var(--dim); font-weight: 400; }
 
-.spinner { width: 14px; height: 14px; flex-shrink: 0; border: 2px solid var(--b2); border-top-color: var(--cyan); border-radius: 50%; display: none; }
-.spinner.on { display: block; animation: spin .6s linear infinite; }
+.map-spinner {
+  width: 14px; height: 14px; flex-shrink: 0;
+  border: 2px solid var(--b2); border-top-color: var(--cyan);
+  border-radius: 50%; display: none;
+}
+.map-spinner.on { display: block; animation: orb-spin .65s linear infinite; }
 
-.clr-btn { color: var(--muted); width: 24px; height: 24px; border-radius: 7px; display: none; align-items: center; justify-content: center; transition: color 130ms, background 130ms; }
-.clr-btn.on { display: flex; }
-.clr-btn:hover { color: var(--text); background: rgba(255,255,255,0.07); }
+/* map search dropdown */
+.map-dropdown {
+  position: absolute; top: calc(100% + 7px); left: 20px; right: 20px;
+  z-index: 1000; background: var(--s1); border: 1px solid var(--b2);
+  border-radius: var(--r); overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  display: none;
+}
+.map-dropdown.open { display: block; animation: drop-in 140ms var(--ease) both; }
+@keyframes drop-in {
+  from { opacity:0; transform: translateY(-5px) scale(.988); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
 
-/* Dropdown */
-.dropdown { position: absolute; top: calc(100% + 7px); left: 0; right: 0; z-index: 500; background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r); overflow: hidden; box-shadow: 0 22px 55px rgba(0,0,0,0.55); display: none; }
-.dropdown.open { display: block; animation: dropIn 150ms var(--ease) both; }
-@keyframes dropIn { from { opacity:0; transform: translateY(-5px) scale(.985); } to { opacity:1; transform: translateY(0) scale(1); } }
-
-.sug { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; cursor: pointer; border-bottom: 1px solid var(--b1); transition: background 90ms; user-select: none; }
+.sug { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; cursor: pointer; border-bottom: 1px solid var(--b1); transition: background 80ms; user-select: none; }
 .sug:last-child { border-bottom: none; }
 .sug:hover, .sug.hi { background: var(--s2); }
-.sug-pin { width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; background: var(--cy-d); color: var(--cyan); display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.sug-pin { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; background: var(--cy-d); color: var(--cyan); display: flex; align-items: center; justify-content: center; margin-top: 1px; }
 .sug-body { flex: 1; min-width: 0; }
-.sug-main { font-size: .86rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sug-sub  { font-size: .72rem; color: var(--sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sug-msg  { padding: 15px; text-align: center; font-size: .8rem; color: var(--muted); }
+.sug-main { font-size: .84rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sug-sub  { font-size: .7rem; color: var(--sub); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sug-msg  { padding: 14px; text-align: center; font-size: .78rem; color: var(--dim); }
 
-/* ══════════════════════════════════════════════
-   TASK 2 — COORDINATE INPUT
-══════════════════════════════════════════════ */
+/* ── Map ─────────────────────────────────────── */
+.map-wrap {
+  margin-top: 12px;
+  height: 340px;
+  position: relative;
+}
+
+/* Leaflet container fills wrap */
+#mapEl { width: 100%; height: 100%; }
+
+/* Dark-theme leaflet overrides */
+.leaflet-container { background: var(--s3) !important; font-family: var(--ff) !important; }
+.leaflet-popup-content-wrapper {
+  background: var(--s2) !important; border: 1px solid var(--b2) !important;
+  border-radius: var(--r) !important; box-shadow: 0 12px 40px rgba(0,0,0,.55) !important;
+  color: var(--text) !important; font-family: var(--ff) !important; font-size: .8rem !important;
+}
+.leaflet-popup-tip { background: var(--s2) !important; }
+.leaflet-popup-close-button { color: var(--sub) !important; }
+.leaflet-popup-close-button:hover { color: var(--text) !important; }
+.leaflet-control-attribution {
+  background: rgba(7,9,15,.85) !important; color: var(--dim) !important;
+  font-size: .58rem !important; backdrop-filter: blur(8px);
+}
+.leaflet-control-attribution a { color: var(--cyan) !important; }
+.leaflet-control-zoom a {
+  background: var(--s2) !important; border-color: var(--b2) !important;
+  color: var(--text) !important; transition: background .15s, color .15s !important;
+}
+.leaflet-control-zoom a:hover { background: var(--s3) !important; color: var(--cyan) !important; }
+
+/* Map overlay — tap-to-pin hint ribbon */
+.map-ribbon {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 500;
+  background: linear-gradient(0deg, rgba(7,9,15,.92) 0%, transparent 100%);
+  padding: 18px 14px 10px;
+  pointer-events: none;
+  display: flex; align-items: flex-end; justify-content: space-between;
+}
+.map-ribbon-tip {
+  font-size: .7rem; color: rgba(255,255,255,.55);
+  display: flex; align-items: center; gap: 6px;
+}
+.map-ribbon-tip::before {
+  content: '📍'; font-size: .85rem;
+}
+
+/* Locate-me FAB on map */
+.map-locate-fab {
+  position: absolute !important; bottom: 46px; right: 10px; z-index: 900;
+  width: 36px; height: 36px; border-radius: 10px !important;
+  background: var(--s2) !important; border: 1px solid var(--b2) !important;
+  color: var(--cyan) !important;
+  display: flex !important; align-items: center; justify-content: center;
+  box-shadow: 0 4px 18px rgba(0,0,0,.45) !important;
+  transition: background .15s, transform .15s !important;
+  pointer-events: all;
+}
+.map-locate-fab:hover { background: var(--s3) !important; transform: scale(1.06) !important; }
+
+/* ── Selected pin info bar (below map) ────────── */
+.pin-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--b1);
+  background: var(--s2);
+  min-height: 58px;
+}
+.pin-bar-empty {
+  font-size: .78rem; color: var(--dim); width: 100%; text-align: center;
+}
+.pin-bar-info { flex: 1; min-width: 0; display: none; }
+.pin-bar-info.on { display: block; animation: fade-up .2s var(--ease) both; }
+@keyframes fade-up { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+.pin-bar-name   { font-size: .84rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pin-bar-coords { font-family: var(--fm); font-size: .62rem; color: var(--cyan); margin-top: 1px; }
+.pin-confirm-btn {
+  padding: 9px 18px; border-radius: var(--r3);
+  background: var(--cyan); color: #050c14;
+  font-family: var(--ff); font-size: .8rem; font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 6px 22px rgba(24,217,240,.28);
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease), opacity .16s;
+  display: none;
+}
+.pin-confirm-btn.on { display: block; }
+.pin-confirm-btn:hover { transform: scale(1.04); box-shadow: 0 10px 28px rgba(24,217,240,.38); }
+.pin-confirm-btn:active { transform: scale(.97); }
+
+/* ── Coord input (collapsible, inside card below pin-bar) ── */
+.coord-section { padding: 0 20px; }
 .coord-toggle {
   display: inline-flex; align-items: center; gap: 6px;
-  margin-top: 13px; font-size: .74rem; font-weight: 600; color: var(--sub);
-  transition: color 150ms;
+  padding: 11px 0; font-size: .72rem; font-weight: 600; color: var(--sub);
+  transition: color .15s;
 }
 .coord-toggle:hover { color: var(--cyan); }
-.coord-toggle .arr { transition: transform 250ms var(--ease); }
+.coord-toggle .arr { transition: transform .25s var(--ease); }
 .coord-toggle.open .arr { transform: rotate(180deg); }
 
 .coord-panel {
-  margin-top: 10px; overflow: hidden;
-  max-height: 0; opacity: 0;
-  transition: max-height 320ms var(--ease), opacity 280ms ease;
+  overflow: hidden; max-height: 0; opacity: 0;
+  transition: max-height .32s var(--ease), opacity .28s ease, padding .28s;
 }
-.coord-panel.open { max-height: 220px; opacity: 1; }
+.coord-panel.open { max-height: 240px; opacity: 1; padding-bottom: 16px; }
 
 .coord-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
 .c-field { display: flex; flex-direction: column; gap: 5px; }
-.c-field label { font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.c-field label { font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--dim); }
 .c-field input {
-  background: var(--s2); border: 1.5px solid var(--b2);
+  background: var(--s3); border: 1.5px solid var(--b2);
   border-radius: var(--r); color: var(--text); font-family: var(--fm); font-size: .82rem;
-  padding: 11px 12px; outline: none;
-  transition: border-color 180ms, box-shadow 180ms;
+  padding: 10px 12px; outline: none;
+  transition: border-color .18s, box-shadow .18s;
   -moz-appearance: textfield;
 }
 .c-field input::-webkit-inner-spin-button,
@@ -189,235 +359,388 @@ body {
 .c-field input.err { border-color: var(--red) !important; box-shadow: 0 0 0 3px var(--re-d) !important; }
 
 .coord-use-btn {
-  width: 100%; padding: 11px 16px;
+  width: 100%; padding: 11px;
   background: var(--s3); border: 1.5px solid var(--b2);
   border-radius: var(--r); color: var(--text);
   font-family: var(--ff); font-size: .82rem; font-weight: 700;
-  transition: all 160ms var(--ease);
+  transition: all .16s var(--ease);
 }
 .coord-use-btn:hover { border-color: var(--cy-m); color: var(--cyan); background: var(--cy-d); }
-.coord-err { font-size: .73rem; color: var(--red); display: none; margin-top: 7px; }
+.coord-err { font-size: .72rem; color: var(--red); display: none; margin-top: 6px; }
 .coord-err.on { display: block; }
 
-/* ══════════════════════════════════════════════
-   CHIP
-══════════════════════════════════════════════ */
-.chip { display: none; align-items: center; gap: 11px; margin-top: 13px; background: var(--s2); border: 1px solid rgba(34,211,238,0.18); border-radius: var(--r); padding: 11px 14px; }
-.chip.on { display: flex; animation: fadeUp 220ms var(--ease) both; }
-@keyframes fadeUp { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
-.chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--grn); box-shadow: 0 0 7px rgba(52,211,153,.5); animation: blink 2.4s ease-in-out infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-.chip-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.chip-name { font-size: .83rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chip-coords { font-family: var(--fm); font-size: .62rem; color: var(--cyan); letter-spacing: .02em; }
-.chip-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--b2); color: var(--sub); font-size: .73rem; font-weight: 700; padding: 5px 11px; border-radius: var(--r3); flex-shrink: 0; transition: all 130ms; }
-.chip-btn:hover { color: var(--text); background: rgba(255,255,255,0.09); }
+/* ── Destination chip (confirms the set location) ── */
+.dest-chip {
+  display: none; align-items: center; gap: 11px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--b1);
+  background: rgba(24,217,240,0.06);
+}
+.dest-chip.on { display: flex; animation: fade-up .22s var(--ease) both; }
+.chip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--grn); flex-shrink: 0; box-shadow: 0 0 8px rgba(46,204,142,.5); animation: dot-blink 2.4s ease-in-out infinite; }
+.chip-body { flex: 1; min-width: 0; }
+.chip-name   { font-size: .83rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip-coords { font-family: var(--fm); font-size: .61rem; color: var(--cyan); margin-top: 1px; }
+.chip-change {
+  background: rgba(255,255,255,.05); border: 1px solid var(--b2);
+  color: var(--sub); font-size: .72rem; font-weight: 700;
+  padding: 5px 12px; border-radius: var(--r3); flex-shrink: 0;
+  transition: all .13s;
+}
+.chip-change:hover { color: var(--text); background: rgba(255,255,255,.09); }
 
-/* ══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    TRACKING CARD
-══════════════════════════════════════════════ */
-#alarmCard { display: flex; flex-direction: column; gap: 20px; }
+═══════════════════════════════════════════════════ */
+.track-card {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: var(--r2);
+  padding: 22px 20px 24px;
+  display: flex; flex-direction: column; gap: 22px;
+}
 
+/* ── Distance ring ───────────────────────────── */
+.ring-area {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
 
-
-/* Ring */
-.ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .ring {
-  width: 172px; height: 172px; border-radius: 50%;
+  width: 180px; height: 180px; border-radius: 50%;
   background: var(--s2); border: 2px solid var(--b2);
   display: flex; align-items: center; justify-content: center;
-  position: relative; transition: border-color 400ms, box-shadow 400ms;
+  position: relative;
+  transition: border-color .4s, box-shadow .4s;
 }
-.ring::before { content: ''; position: absolute; inset: -7px; border-radius: 50%; border: 1px solid rgba(34,211,238,.05); pointer-events: none; }
-.ring.tracking { border-color: rgba(34,211,238,.5); box-shadow: 0 0 0 6px var(--cy-d), 0 0 32px var(--cy-g); animation: pulse 2.2s ease-in-out infinite; }
-.ring.near     { border-color: var(--amb); box-shadow: 0 0 0 6px var(--am-d), 0 0 38px rgba(245,158,11,.28); animation: pulse .8s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.035)} }
+/* outer decorative track */
+.ring::before {
+  content: ''; position: absolute; inset: -8px; border-radius: 50%;
+  border: 1px solid rgba(24,217,240,.04); pointer-events: none;
+}
+.ring.state-tracking {
+  border-color: var(--cy-str);
+  box-shadow: 0 0 0 6px var(--cy-d), 0 0 36px var(--cy-g);
+  animation: ring-pulse 2.2s ease-in-out infinite;
+}
+.ring.state-near {
+  border-color: var(--amb);
+  box-shadow: 0 0 0 6px var(--am-d), 0 0 44px rgba(245,166,35,.32);
+  animation: ring-pulse .85s ease-in-out infinite;
+}
+@keyframes ring-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.038)} }
 
-.ring-face { text-align: center; }
-.ring-dist { font-family: var(--fm); font-size: 1.9rem; font-weight: 700; color: var(--text); line-height: 1; transition: color 350ms; }
-.ring.tracking .ring-dist { color: var(--cyan); }
-.ring.near     .ring-dist { color: var(--amb); }
-.ring-lbl { font-size: .62rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-top: 4px; }
-.ring-caption { font-size: .78rem; color: var(--sub); text-align: center; max-width: 250px; min-height: 1.15em; }
+.ring-inner { text-align: center; }
+.ring-value {
+  font-family: var(--fm); font-size: 1.95rem; font-weight: 700;
+  color: var(--text); line-height: 1;
+  transition: color .35s;
+}
+.ring.state-tracking .ring-value { color: var(--cyan); }
+.ring.state-near     .ring-value { color: var(--amb);  }
+.ring-unit { font-size: .6rem; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); margin-top: 4px; }
 
-/* Pills */
-.ctl-lbl { font-size: .62rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: 9px; }
+/* Distance type badge */
+.ring-badge {
+  font-size: .58rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--dim); background: var(--s3); border: 1px solid var(--b1);
+  padding: 3px 9px; border-radius: var(--r3);
+  margin-top: 3px; display: inline-block;
+  transition: color .3s;
+}
+.ring-badge.road { color: var(--cyan); border-color: rgba(24,217,240,.2); background: var(--cy-d); }
+
+.ring-caption {
+  font-size: .8rem; color: var(--sub);
+  text-align: center; max-width: 260px; min-height: 1.2em;
+  transition: color .3s;
+}
+.ring-caption.warn { color: var(--amb); }
+.ring-caption.good { color: var(--grn); }
+
+/* ── Alert threshold ─────────────────────────── */
+.section-row { display: flex; flex-direction: column; gap: 9px; }
+.section-title { font-size: .6rem; text-transform: uppercase; letter-spacing: .13em; color: var(--dim); }
 .pills { display: flex; flex-wrap: wrap; gap: 7px; }
-.pill { background: var(--s2); border: 1.5px solid var(--b2); color: var(--sub); font-family: var(--ff); font-size: .8rem; font-weight: 600; padding: 7px 15px; border-radius: var(--r3); transition: all 150ms var(--ease); }
+.pill {
+  background: var(--s2); border: 1.5px solid var(--b2);
+  color: var(--sub); font-family: var(--ff); font-size: .8rem; font-weight: 600;
+  padding: 7px 16px; border-radius: var(--r3);
+  transition: all .15s var(--ease);
+}
 .pill:hover { color: var(--text); border-color: var(--b3); }
-.pill.on { background: var(--cy-d); border-color: rgba(34,211,238,.42); color: var(--cyan); }
+.pill.on { background: var(--cy-d); border-color: var(--cy-m); color: var(--cyan); }
 
-/* Stats */
+/* ── Stats ───────────────────────────────────── */
 .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; }
-.stat { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 12px 11px; }
-.stat-lbl { font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: block; margin-bottom: 4px; }
+.stat {
+  background: var(--s2); border: 1px solid var(--b1);
+  border-radius: var(--r); padding: 13px 11px;
+}
+.stat-lbl { font-size: .58rem; text-transform: uppercase; letter-spacing: .1em; color: var(--dim); display: block; margin-bottom: 5px; }
 .stat-val { font-family: var(--fm); font-size: .8rem; font-weight: 700; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ══════════════════════════════════════════════
-   TASK 3 — CURRENT LOCATION
-══════════════════════════════════════════════ */
-.loc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
-.loc-title { font-size: .62rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
-.live-dot {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted);
+/* ── My location row ─────────────────────────── */
+.myloc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.myloc-box {
+  background: var(--s2); border: 1px solid var(--b1);
+  border-radius: var(--r); padding: 12px 12px;
+  transition: border-color .3s;
 }
-.live-dot::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--muted); transition: background 300ms, box-shadow 300ms; }
-.live-dot.on::before { background: var(--grn); box-shadow: 0 0 6px rgba(52,211,153,.6); animation: blink 1.8s ease-in-out infinite; }
-.live-dot.on { color: var(--grn); }
+.myloc-box.live { border-color: rgba(74,158,255,.22); }
+.myloc-lbl { font-size: .58rem; text-transform: uppercase; letter-spacing: .1em; color: var(--dim); display: block; margin-bottom: 4px; }
+.myloc-val { font-family: var(--fm); font-size: .78rem; font-weight: 700; color: var(--sub); display: block; transition: color .3s; }
+.myloc-box.live .myloc-val { color: var(--blu); }
 
-.loc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.loc-box { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 12px 13px; transition: border-color 300ms; }
-.loc-box.on { border-color: rgba(34,211,238,0.18); }
-.loc-box-lbl { font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: block; margin-bottom: 4px; }
-.loc-box-val { font-family: var(--fm); font-size: .8rem; font-weight: 700; color: var(--sub); display: block; transition: color 300ms; }
-.loc-box.on .loc-box-val { color: var(--cyan); }
+/* ── Journey status banner ───────────────────── */
+.journey-banner {
+  display: none; align-items: center; gap: 10px;
+  padding: 13px 15px; border-radius: var(--r);
+  background: var(--cy-d); border: 1px solid rgba(24,217,240,.18);
+  font-size: .8rem; color: var(--text); line-height: 1.45;
+}
+.journey-banner.on { display: flex; animation: fade-up .24s var(--ease) both; }
+.journey-icon { font-size: 1.1rem; flex-shrink: 0; }
 
-/* Start button */
+/* ── Start / Stop button ─────────────────────── */
 .start-btn {
-  width: 100%; padding: 17px 22px;
-  display: flex; align-items: center; justify-content: center; gap: 9px;
-  border-radius: var(--r); font-family: var(--ff); font-size: .95rem; font-weight: 800; letter-spacing: .01em;
-  background: linear-gradient(135deg,#22d3ee,#0891b2); color: #040d12;
-  box-shadow: 0 8px 32px rgba(34,211,238,.26);
-  transition: transform 180ms var(--ease), box-shadow 180ms var(--ease);
+  width: 100%; padding: 18px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  border-radius: var(--r); font-family: var(--ff); font-size: .96rem; font-weight: 800;
+  background: linear-gradient(135deg, #18d9f0, #0891b2);
+  color: #04111a;
+  box-shadow: 0 8px 30px rgba(24,217,240,.28);
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease);
   position: relative; overflow: hidden;
+  letter-spacing: .01em;
 }
-.start-btn::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,.07); opacity:0; transition:opacity 140ms; }
-.start-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 44px rgba(34,211,238,.33); }
+.start-btn::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,.08); opacity:0; transition:opacity .14s; }
+.start-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(24,217,240,.36); }
 .start-btn:hover::after { opacity:1; }
 .start-btn:active { transform: translateY(0); }
-.start-btn.stop { background: linear-gradient(135deg,#f43f5e,#be123c); box-shadow: 0 8px 32px var(--re-g); }
-.start-btn.stop:hover { box-shadow: 0 14px 44px var(--re-g); }
+.start-btn.stop-mode {
+  background: linear-gradient(135deg, var(--red), #b91c3a);
+  box-shadow: 0 8px 30px var(--re-g);
+}
+.start-btn.stop-mode:hover { box-shadow: 0 14px 40px var(--re-g); }
 
-.tip { font-size: .73rem; color: var(--muted); text-align: center; line-height: 1.6; }
+.tip {
+  font-size: .72rem; color: var(--dim);
+  text-align: center; line-height: 1.65;
+}
 
-/* ══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    ALARM OVERLAY
-══════════════════════════════════════════════ */
-#alarmOverlay { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; padding: 24px; animation: flash .5s ease-in-out infinite alternate; }
+═══════════════════════════════════════════════════ */
+#alarmOverlay {
+  position: fixed; inset: 0; z-index: 9999;
+  display: none; align-items: center; justify-content: center; padding: 24px;
+  animation: alarm-flash .5s ease-in-out infinite alternate;
+}
 #alarmOverlay.on { display: flex; }
-@keyframes flash { from { background: rgba(8,12,18,.96); } to { background: rgba(28,4,9,.97); } }
-.alarm-pulse { position: absolute; top: 50%; left: 50%; width: 280px; height: 280px; border-radius: 50%; border: 2px solid var(--red); opacity: 0; animation: pexp 1.7s ease-out infinite; transform: translate(-50%,-50%); pointer-events: none; }
-@keyframes pexp { 0% { transform: translate(-50%,-50%) scale(.5); opacity:.5; } 100% { transform: translate(-50%,-50%) scale(1.7); opacity:0; } }
-.alarm-box { position: relative; z-index: 1; max-width: 310px; width: 100%; background: rgba(14,5,8,.80); border: 1px solid rgba(244,63,94,.22); border-radius: 24px; padding: 36px 24px 30px; text-align: center; backdrop-filter: blur(24px); box-shadow: 0 0 80px rgba(244,63,94,.10); display: flex; flex-direction: column; align-items: center; gap: 13px; }
-.alarm-bell { font-size: 3.2rem; animation: shake .32s ease-in-out infinite; line-height: 1; }
-@keyframes shake { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }
-.alarm-title { font-size: clamp(2rem,7vw,3rem); font-weight: 900; color: var(--red); letter-spacing: .04em; line-height: 1; text-shadow: 0 0 40px var(--re-g); }
-.alarm-sub  { font-size: .86rem; color: var(--sub); }
-.alarm-dest { font-size: .97rem; font-weight: 700; line-height: 1.35; }
-.dismiss-btn { margin-top: 6px; padding: 14px 38px; border-radius: var(--r3); background: var(--red); color: #fff; font-family: var(--ff); font-size: .88rem; font-weight: 800; letter-spacing: .04em; box-shadow: 0 8px 26px var(--re-g); transition: transform 160ms, box-shadow 160ms; }
-.dismiss-btn:hover { transform: scale(1.06); box-shadow: 0 14px 38px var(--re-g); }
+@keyframes alarm-flash {
+  from { background: rgba(7,9,15,.96); }
+  to   { background: rgba(30,4,9,.98); }
+}
+.alarm-ripple {
+  position: absolute; top: 50%; left: 50%;
+  width: 300px; height: 300px; border-radius: 50%;
+  border: 2px solid var(--red); opacity: 0; pointer-events: none;
+  animation: ripple-out 1.7s ease-out infinite;
+  transform: translate(-50%,-50%);
+}
+@keyframes ripple-out {
+  0%   { transform: translate(-50%,-50%) scale(.5); opacity: .5; }
+  100% { transform: translate(-50%,-50%) scale(1.8); opacity: 0; }
+}
+.alarm-box {
+  position: relative; z-index: 1;
+  max-width: 320px; width: 100%;
+  background: rgba(12,4,8,.82); border: 1px solid rgba(240,69,90,.24);
+  border-radius: 26px; padding: 38px 24px 32px;
+  text-align: center; backdrop-filter: blur(28px);
+  box-shadow: 0 0 90px rgba(240,69,90,.10);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.alarm-bell { font-size: 3.5rem; animation: bell-ring .3s ease-in-out infinite; line-height: 1; }
+@keyframes bell-ring { 0%,100%{transform:rotate(-9deg)} 50%{transform:rotate(9deg)} }
+.alarm-title {
+  font-size: clamp(2.1rem,7vw,3.2rem); font-weight: 900;
+  color: var(--red); letter-spacing: .05em; line-height: 1;
+  text-shadow: 0 0 40px rgba(240,69,90,.4);
+}
+.alarm-body { font-size: .88rem; color: var(--sub); }
+.alarm-dest { font-size: 1rem; font-weight: 700; line-height: 1.4; }
+.dismiss-btn {
+  margin-top: 6px; padding: 14px 40px; border-radius: var(--r3);
+  background: var(--red); color: #fff;
+  font-family: var(--ff); font-size: .9rem; font-weight: 800; letter-spacing: .04em;
+  box-shadow: 0 8px 28px var(--re-g);
+  transition: transform .16s, box-shadow .16s;
+}
+.dismiss-btn:hover { transform: scale(1.06); box-shadow: 0 14px 40px var(--re-g); }
 .dismiss-btn:active { transform: scale(.97); }
 
-/* ══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    RESPONSIVE
-══════════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 @media(max-width:440px) {
-  .wrap { padding: 18px 13px 0; gap: 14px; }
-  .card { padding: 17px 15px 19px; }
-  .ring { width: 152px; height: 152px; }
-  .ring-dist { font-size: 1.65rem; }
-  .stats { gap: 7px; }
-  .stat { padding: 10px 8px; }
+  .wrap { padding: 18px 12px 0; gap: 12px; }
+  .dest-header, .dest-chip, .pin-bar { padding-left: 16px; padding-right: 16px; }
+  .map-search-wrap { padding: 0 16px; }
+  .map-dropdown    { left: 16px; right: 16px; }
+  .coord-section   { padding: 0 16px; }
+  .track-card { padding: 18px 16px 20px; }
+  .ring { width: 160px; height: 160px; }
+  .ring-value { font-size: 1.72rem; }
+  .stats { gap: 7px; } .stat { padding: 10px 9px; }
   .coord-grid { grid-template-columns: 1fr; }
-  .loc-grid { grid-template-columns: 1fr; }
+  .myloc-row  { grid-template-columns: 1fr; }
+  .map-wrap { height: 280px; }
 }
 @media(max-width:340px) {
-  .pills { gap: 5px; }
-  .pill  { padding: 6px 11px; font-size: .76rem; }
+  .pills { gap: 5px; } .pill { padding: 6px 11px; font-size: .76rem; }
 }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- ═══════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════ -->
 <header class="hdr">
-  <div class="hdr-logo">
-    <div class="hdr-icon">◎</div>
+  <div class="hdr-brand">
+    <div class="hdr-orb">◎</div>
     TravelAlarm
   </div>
-  <span class="hdr-tag">Never miss your stop</span>
+  <div class="hdr-pill" id="hdrPill">
+    <div class="hdr-pill-dot" id="hdrDot"></div>
+    <span id="hdrStatus">Ready</span>
+  </div>
 </header>
 
-<!-- MAIN — both sections always on screen -->
 <main class="wrap">
 
-  <!-- ── 1. DESTINATION CARD ──────────────────────── -->
-  <div class="card" id="destCard">
-    <p class="eyebrow">Step 1 — Destination</p>
-    <h1 class="card-title">Where are you headed?</h1>
+  <!-- ═══════════════════════════════════════════
+       SECTION 1 — SET DESTINATION
+  ═══════════════════════════════════════════ -->
+  <div class="sec-label">
+    <div class="sec-label-num">1</div>
+    <span class="sec-label-text">Set your destination</span>
+  </div>
 
-    <!-- Autocomplete search -->
-    <div class="search-wrap" id="searchWrap">
-      <div class="search-bar">
+  <div class="dest-card" id="destCard">
+
+    <!-- Card header -->
+    <div class="dest-header">
+      <div class="dest-header-left">
+        <h2>Where are you going?</h2>
+        <p>Search or tap the map to pin your stop.</p>
+      </div>
+    </div>
+
+    <!-- Map search bar (Nominatim — free, no key) -->
+    <div class="map-search-wrap" id="mapSearchWrap">
+      <div class="map-search-bar">
         <span class="s-ico">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
         </span>
-        <input id="searchInput" type="text" placeholder="Search a place — e.g. NIT Warangal" autocomplete="off" spellcheck="false">
-        <div class="spinner" id="spinner"></div>
-        <button class="clr-btn" id="clrBtn" aria-label="Clear">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-            <path d="M18 6 6 18M6 6l12 12"/>
-          </svg>
-        </button>
+        <input id="mapSearchInput" type="text"
+               placeholder="Search — e.g. NIT Warangal, Hyderabad airport…"
+               autocomplete="off" spellcheck="false">
+        <div class="map-spinner" id="mapSpinner"></div>
       </div>
-      <div class="dropdown" id="dropdown"></div>
+      <div class="map-dropdown" id="mapDropdown"></div>
     </div>
 
-    <!-- TASK 2: manual coordinates (collapsible) -->
-    <button class="coord-toggle" id="coordToggle">
-      <svg class="arr" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
-      Enter coordinates manually
-    </button>
-
-    <div class="coord-panel" id="coordPanel">
-      <div class="coord-grid">
-        <div class="c-field">
-          <label for="latInput">Latitude (−90 to 90)</label>
-          <input id="latInput" type="number" step="any" placeholder="e.g. 17.9860" min="-90" max="90">
-        </div>
-        <div class="c-field">
-          <label for="lonInput">Longitude (−180 to 180)</label>
-          <input id="lonInput" type="number" step="any" placeholder="e.g. 79.5308" min="-180" max="180">
-        </div>
+    <!-- Leaflet map -->
+    <div class="map-wrap">
+      <div id="mapEl"></div>
+      <!-- gradient ribbon with tap hint -->
+      <div class="map-ribbon">
+        <span class="map-ribbon-tip">Tap anywhere to drop a destination pin</span>
       </div>
-      <button class="coord-use-btn" id="coordUseBtn">📍 Use These Coordinates</button>
-      <p class="coord-err" id="coordErr"></p>
     </div>
 
-    <!-- Selected destination chip -->
-    <div class="chip" id="chip">
+    <!-- Pin info bar — empty state / filled state -->
+    <div class="pin-bar" id="pinBar">
+      <span class="pin-bar-empty" id="pinBarEmpty">No pin yet — tap the map above</span>
+      <div class="pin-bar-info" id="pinBarInfo">
+        <div class="pin-bar-name"   id="pinBarName">—</div>
+        <div class="pin-bar-coords" id="pinBarCoords">—</div>
+      </div>
+      <button class="pin-confirm-btn" id="pinConfirmBtn">Set as Destination ✓</button>
+    </div>
+
+    <!-- Manual coordinate entry (collapsible) -->
+    <div class="coord-section">
+      <button class="coord-toggle" id="coordToggle">
+        <svg class="arr" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+        Enter coordinates manually
+      </button>
+
+      <div class="coord-panel" id="coordPanel">
+        <div class="coord-grid">
+          <div class="c-field">
+            <label for="latInput">Latitude (−90 to 90)</label>
+            <input id="latInput" type="number" step="any" placeholder="e.g. 17.9860" min="-90" max="90">
+          </div>
+          <div class="c-field">
+            <label for="lonInput">Longitude (−180 to 180)</label>
+            <input id="lonInput" type="number" step="any" placeholder="e.g. 79.5308" min="-180" max="180">
+          </div>
+        </div>
+        <button class="coord-use-btn" id="coordUseBtn">📍 Use These Coordinates</button>
+        <p class="coord-err" id="coordErr"></p>
+      </div>
+    </div>
+
+    <!-- Confirmed destination chip -->
+    <div class="dest-chip" id="destChip">
       <div class="chip-dot"></div>
-      <div class="chip-info">
-        <span class="chip-name"   id="chipName"></span>
-        <span class="chip-coords" id="chipCoords"></span>
+      <div class="chip-body">
+        <div class="chip-name"   id="chipName">—</div>
+        <div class="chip-coords" id="chipCoords">—</div>
       </div>
-      <button class="chip-btn" id="chipChangeBtn">Change</button>
+      <button class="chip-change" id="chipChangeBtn">Change</button>
     </div>
+
+  </div><!-- /dest-card -->
+
+  <!-- ═══════════════════════════════════════════
+       SECTION 2 — TRACKING & ALARM
+  ═══════════════════════════════════════════ -->
+  <div class="sec-label">
+    <div class="sec-label-num">2</div>
+    <span class="sec-label-text">Alarm &amp; tracking</span>
   </div>
 
-  <div class="divider"><span>Step 2 — Tracking</span></div>
+  <div class="track-card" id="alarmCard">
 
-  <!-- ── 2. TRACKING CARD ─────────────────────────── -->
-  <div class="card" id="alarmCard">
-
-
-    <div class="ring-wrap">
+    <!-- Distance ring -->
+    <div class="ring-area">
       <div class="ring" id="ring">
-        <div class="ring-face">
-          <div class="ring-dist" id="ringDist">—</div>
-          <div class="ring-lbl">away</div>
+        <div class="ring-inner">
+          <div class="ring-value"  id="ringValue">—</div>
+          <div class="ring-unit">distance</div>
+          <div class="ring-badge" id="ringBadge">straight line</div>
         </div>
       </div>
-      <p class="ring-caption" id="ringCaption">Set a destination to begin</p>
+      <p class="ring-caption" id="ringCaption">Set a destination above to begin</p>
     </div>
 
-    <!-- Alert threshold -->
-    <div>
-      <p class="ctl-lbl">Alert me when within</p>
+    <!-- Journey status banner -->
+    <div class="journey-banner" id="journeyBanner">
+      <span class="journey-icon">🛣️</span>
+      <span id="journeyText">Tracking your journey…</span>
+    </div>
+
+    <!-- Alert threshold pills -->
+    <div class="section-row">
+      <p class="section-title">Alert me when within</p>
       <div class="pills">
         <button class="pill"    data-m="300">300 m</button>
         <button class="pill on" data-m="500">500 m</button>
@@ -426,7 +749,7 @@ body {
       </div>
     </div>
 
-    <!-- Stats row -->
+    <!-- Status stats -->
     <div class="stats">
       <div class="stat">
         <span class="stat-lbl">Status</span>
@@ -442,150 +765,311 @@ body {
       </div>
     </div>
 
-    <!-- TASK 3: current location display -->
+    <!-- My current location -->
     <div>
-      <div class="loc-head">
-        <span class="loc-title">My current location</span>
-        <span class="live-dot" id="liveDot">not tracking</span>
-      </div>
-      <div class="loc-grid">
-        <div class="loc-box" id="myLatBox">
-          <span class="loc-box-lbl">Latitude</span>
-          <span class="loc-box-val" id="myLat">—</span>
+      <p class="section-title" style="margin-bottom:9px">
+        My current position
+        <span style="float:right" id="liveLabel">—</span>
+      </p>
+      <div class="myloc-row">
+        <div class="myloc-box" id="myLatBox">
+          <span class="myloc-lbl">Latitude</span>
+          <span class="myloc-val" id="myLat">—</span>
         </div>
-        <div class="loc-box" id="myLonBox">
-          <span class="loc-box-lbl">Longitude</span>
-          <span class="loc-box-val" id="myLon">—</span>
+        <div class="myloc-box" id="myLonBox">
+          <span class="myloc-lbl">Longitude</span>
+          <span class="myloc-val" id="myLon">—</span>
         </div>
       </div>
     </div>
 
-    <!-- CTA -->
+    <!-- Start / Stop button -->
     <button class="start-btn" id="startBtn">
-      <svg id="btnIco" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+      <svg id="btnIco" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M5 3l14 9-14 9V3z"/>
+      </svg>
       <span id="btnLbl">Start Alarm</span>
     </button>
 
-    <p class="tip" id="tipTxt">Keep this tab open and your screen on while traveling.</p>
+    <p class="tip" id="tipTxt">
+      Keep this tab open and your screen on. The alarm fires automatically.
+    </p>
   </div>
 
 </main>
 
-<!-- ALARM OVERLAY -->
+<!-- ═══════════════════════════════════════════════
+     ALARM OVERLAY
+═══════════════════════════════════════════════ -->
 <div id="alarmOverlay" role="alertdialog" aria-modal="true" aria-live="assertive">
-  <div class="alarm-pulse"></div>
+  <div class="alarm-ripple"></div>
   <div class="alarm-box">
     <div class="alarm-bell">🔔</div>
     <div class="alarm-title">WAKE UP!</div>
-    <p class="alarm-sub">You're approaching your destination</p>
+    <p class="alarm-body">You're approaching your stop</p>
     <p class="alarm-dest" id="alarmDest">—</p>
     <button class="dismiss-btn" id="dismissBtn">Dismiss Alarm</button>
   </div>
 </div>
 
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
 'use strict';
 
-/* ── STATE ───────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════ */
 const S = {
-  dest:      null,
-  threshold: 500,
-  tracking:  false,
-  watchId:   null,
-  fired:     false,
-  audioCtx:  null,
-  beepIv:    null,
+  dest:       null,   // { name, lat, lon }
+  threshold:  500,    // metres (alarm trigger distance)
+  tracking:   false,
+  watchId:    null,
+  fired:      false,
+  audioCtx:   null,
+  beepIv:     null,
+  // current user position (for map marker update)
+  userLat:    null,
+  userLon:    null,
 };
 
-/* ── DOM CACHE ───────────────────────────────────── */
-const $ = id => document.getElementById(id);
-const D = {
-  input:       $('searchInput'),
-  spinner:     $('spinner'),
-  clrBtn:      $('clrBtn'),
-  dropdown:    $('dropdown'),
-  coordToggle: $('coordToggle'),
-  coordPanel:  $('coordPanel'),
-  latInput:    $('latInput'),
-  lonInput:    $('lonInput'),
-  coordUseBtn: $('coordUseBtn'),
-  coordErr:    $('coordErr'),
-  chip:        $('chip'),
-  chipName:    $('chipName'),
-  chipCoords:  $('chipCoords'),
-  chipChange:  $('chipChangeBtn'),
-  ring:        $('ring'),
-  ringDist:    $('ringDist'),
-  ringCap:     $('ringCaption'),
-  stStatus:    $('stStatus'),
-  stAlert:     $('stAlert'),
-  stGps:       $('stGps'),
-  myLat:       $('myLat'),
-  myLon:       $('myLon'),
-  myLatBox:    $('myLatBox'),
-  myLonBox:    $('myLonBox'),
-  liveDot:     $('liveDot'),
-  startBtn:    $('startBtn'),
-  btnIco:      $('btnIco'),
-  btnLbl:      $('btnLbl'),
-  tipTxt:      $('tipTxt'),
-  overlay:     $('alarmOverlay'),
-  alarmDest:   $('alarmDest'),
-  dismissBtn:  $('dismissBtn'),
+/* ═══════════════════════════════════════════════════
+   DOM SHORTCUTS
+═══════════════════════════════════════════════════ */
+const $  = id => document.getElementById(id);
+const D  = {
+  /* map search */
+  mapSearchInput: $('mapSearchInput'),
+  mapSpinner:     $('mapSpinner'),
+  mapDropdown:    $('mapDropdown'),
+  /* pin bar */
+  pinBar:         $('pinBar'),
+  pinBarEmpty:    $('pinBarEmpty'),
+  pinBarInfo:     $('pinBarInfo'),
+  pinBarName:     $('pinBarName'),
+  pinBarCoords:   $('pinBarCoords'),
+  pinConfirmBtn:  $('pinConfirmBtn'),
+  /* coord panel */
+  coordToggle:    $('coordToggle'),
+  coordPanel:     $('coordPanel'),
+  latInput:       $('latInput'),
+  lonInput:       $('lonInput'),
+  coordUseBtn:    $('coordUseBtn'),
+  coordErr:       $('coordErr'),
+  /* chip */
+  destChip:       $('destChip'),
+  chipName:       $('chipName'),
+  chipCoords:     $('chipCoords'),
+  chipChange:     $('chipChangeBtn'),
+  /* header */
+  hdrDot:         $('hdrDot'),
+  hdrStatus:      $('hdrStatus'),
+  /* ring */
+  ring:           $('ring'),
+  ringValue:      $('ringValue'),
+  ringBadge:      $('ringBadge'),
+  ringCaption:    $('ringCaption'),
+  /* journey banner */
+  journeyBanner:  $('journeyBanner'),
+  journeyText:    $('journeyText'),
+  /* stats */
+  stStatus:       $('stStatus'),
+  stAlert:        $('stAlert'),
+  stGps:          $('stGps'),
+  /* my location */
+  myLat:          $('myLat'),
+  myLon:          $('myLon'),
+  myLatBox:       $('myLatBox'),
+  myLonBox:       $('myLonBox'),
+  liveLabel:      $('liveLabel'),
+  /* cta */
+  startBtn:       $('startBtn'),
+  btnIco:         $('btnIco'),
+  btnLbl:         $('btnLbl'),
+  tipTxt:         $('tipTxt'),
+  /* overlay */
+  overlay:        $('alarmOverlay'),
+  alarmDest:      $('alarmDest'),
+  dismissBtn:     $('dismissBtn'),
 };
 
-/* ══════════════════════════════════════════════════
-   AUTOCOMPLETE — Photon by Komoot (free, no key)
-══════════════════════════════════════════════════ */
-let timer = null, preds = [], hlIdx = -1;
-
-D.input.addEventListener('input', () => {
-  const q = D.input.value.trim();
-  D.clrBtn.classList.toggle('on', q.length > 0);
-  if (q.length < 2) { closeDrop(); return; }
-  clearTimeout(timer);
-  showSpin(true);
-  timer = setTimeout(() => fetchPlaces(q), 300);
+/* ═══════════════════════════════════════════════════
+   LEAFLET MAP
+   ─────────────────────────────────────────────────
+   Two markers:
+     • userMarker  — blue pulsing dot = user's GPS
+     • destMarker  — cyan teardrop pin = destination
+═══════════════════════════════════════════════════ */
+const map = L.map('mapEl', {
+  center:      [20.5937, 78.9629],
+  zoom:        5,
+  zoomControl: true,
 });
 
-D.input.addEventListener('keydown', e => {
-  const rows = D.dropdown.querySelectorAll('.sug');
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 19,
+}).addTo(map);
+
+/* ── Custom destination pin (cyan teardrop) ───── */
+const destIcon = L.divIcon({
+  className: '',
+  iconSize:  [30, 40], iconAnchor: [15, 40], popupAnchor: [0, -42],
+  html: `<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
+    <path d="M15 0C6.716 0 0 6.716 0 15c0 10 15 25 15 25s15-15 15-25C30 6.716 23.284 0 15 0z"
+          fill="#18d9f0" fill-opacity=".92"/>
+    <circle cx="15" cy="15" r="6" fill="#fff"/>
+  </svg>`,
+});
+
+/* ── Custom user location marker (blue pulse) ─── */
+const userIcon = L.divIcon({
+  className: '',
+  iconSize:  [20, 20], iconAnchor: [10, 10],
+  html: `<div style="
+    width:20px;height:20px;border-radius:50%;
+    background:#4a9eff;
+    border:3px solid #fff;
+    box-shadow:0 0 0 6px rgba(74,158,255,.22), 0 2px 8px rgba(0,0,0,.45);
+    animation:user-pulse 2.4s ease-in-out infinite;
+  "></div>
+  <style>
+    @keyframes user-pulse {
+      0%,100%{box-shadow:0 0 0 6px rgba(74,158,255,.22), 0 2px 8px rgba(0,0,0,.45)}
+      50%    {box-shadow:0 0 0 12px rgba(74,158,255,.08), 0 2px 8px rgba(0,0,0,.45)}
+    }
+  </style>`,
+});
+
+let destMarker = null;   // destination pin
+let userMarker = null;   // current-location dot
+let pendingPin = null;   // { lat, lon, name } set on tap, confirmed by button
+
+/* ── Map click ────────────────────────────────── */
+map.on('click', async e => {
+  const { lat, lng: lon } = e.latlng;
+  movePendingPin(lat, lon);
+  const name = await reverseGeocode(lat, lon);
+  pendingPin = { lat, lon, name: name || `${lat.toFixed(4)}, ${lon.toFixed(4)}` };
+  showPinBar(pendingPin);
+});
+
+/* Move/create destination pin on the map */
+function movePendingPin(lat, lon) {
+  if (destMarker) { destMarker.setLatLng([lat, lon]); }
+  else            { destMarker = L.marker([lat, lon], { icon: destIcon }).addTo(map); }
+}
+
+/* Show the pin info bar with name + confirm button */
+function showPinBar({ lat, lon, name }) {
+  D.pinBarEmpty.style.display     = 'none';
+  D.pinBarInfo.classList.add('on');
+  D.pinBarName.textContent        = name;
+  D.pinBarCoords.textContent      = `${lat.toFixed(5)},  ${lon.toFixed(5)}`;
+  D.pinConfirmBtn.classList.add('on');
+}
+
+/* ── Confirm button ───────────────────────────── */
+D.pinConfirmBtn.addEventListener('click', () => {
+  if (!pendingPin) return;
+  setDestination(pendingPin);
+});
+
+/* ── Locate-me button (custom Leaflet control) ── */
+const locateCtrl = L.control({ position: 'bottomright' });
+locateCtrl.onAdd = () => {
+  const btn = L.DomUtil.create('button', 'map-locate-fab');
+  btn.title   = 'Jump to my location';
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+    <circle cx="12" cy="12" r="9" stroke-dasharray="3 4"/>
+  </svg>`;
+  L.DomEvent.on(btn, 'click', ev => {
+    L.DomEvent.stopPropagation(ev);
+    locateUser();
+  });
+  return btn;
+};
+locateCtrl.addTo(map);
+
+/* Fly to user's GPS position */
+function locateUser() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    pos => map.flyTo([pos.coords.latitude, pos.coords.longitude], 14, { duration: 1.4 }),
+    null, { timeout: 8000 }
+  );
+}
+
+/* Update (or create) the blue user-location dot on the map */
+function updateUserMarker(lat, lon) {
+  if (userMarker) { userMarker.setLatLng([lat, lon]); }
+  else {
+    userMarker = L.marker([lat, lon], { icon: userIcon, zIndexOffset: -100 }).addTo(map);
+  }
+}
+
+/* Auto-centre map on user location on first load */
+locateUser();
+
+/* ═══════════════════════════════════════════════════
+   MAP SEARCH — Nominatim (free, no key, open CORS)
+═══════════════════════════════════════════════════ */
+let mapTimer = null, mapPreds = [], mapHlIdx = -1;
+
+D.mapSearchInput.addEventListener('input', () => {
+  const q = D.mapSearchInput.value.trim();
+  if (q.length < 2) { closeMapDrop(); return; }
+  clearTimeout(mapTimer);
+  D.mapSpinner.classList.add('on');
+  mapTimer = setTimeout(() => fetchMapPlaces(q), 340);
+});
+
+D.mapSearchInput.addEventListener('keydown', e => {
+  const rows = D.mapDropdown.querySelectorAll('.sug');
   if (!rows.length) return;
-  if      (e.key === 'ArrowDown')           { e.preventDefault(); hlIdx = Math.min(hlIdx+1, rows.length-1); hl(rows); }
-  else if (e.key === 'ArrowUp')             { e.preventDefault(); hlIdx = Math.max(hlIdx-1, 0); hl(rows); }
-  else if (e.key === 'Enter' && hlIdx >= 0) { e.preventDefault(); pickPred(hlIdx); }
-  else if (e.key === 'Escape')              { closeDrop(); D.input.blur(); }
+  if      (e.key === 'ArrowDown')              { e.preventDefault(); mapHlIdx = Math.min(mapHlIdx+1, rows.length-1); hlMap(rows); }
+  else if (e.key === 'ArrowUp')                { e.preventDefault(); mapHlIdx = Math.max(mapHlIdx-1, 0); hlMap(rows); }
+  else if (e.key === 'Enter' && mapHlIdx >= 0) { e.preventDefault(); pickMapPred(mapHlIdx); }
+  else if (e.key === 'Escape')                 { closeMapDrop(); D.mapSearchInput.blur(); }
 });
 
 document.addEventListener('mousedown', e => {
-  if (!e.target.closest('#searchWrap') && !e.target.closest('#coordPanel')) closeDrop();
+  if (!e.target.closest('#mapSearchWrap')) closeMapDrop();
 });
 
-async function fetchPlaces(q) {
+async function fetchMapPlaces(q) {
   try {
-    const BBOX = '68.1,6.5,97.4,35.7'; // India bounding box
-    const url  = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=en&bbox=${BBOX}`;
-    const res  = await fetch(url);
+    const url = `https://nominatim.openstreetmap.org/search` +
+      `?format=json&limit=6&addressdetails=1&countrycodes=in&q=${encodeURIComponent(q)}`;
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
     const data = await res.json();
-    showSpin(false);
+    D.mapSpinner.classList.remove('on');
 
-    const features = data?.features;
-    if (!features || features.length === 0) {
-      D.dropdown.innerHTML = '<div class="sug-msg">No places found. Try a different name.</div>';
-      openDrop(); return;
+    if (!data?.length) {
+      D.mapDropdown.innerHTML = '<div class="sug-msg">No results. Try a broader term.</div>';
+      openMapDrop(); return;
     }
 
-    preds = features; hlIdx = -1;
-    D.dropdown.innerHTML = '';
-    features.forEach((feat, i) => {
-      const p   = feat.properties;
-      const main = p.name || p.street || p.city || 'Unknown';
-      const sub  = [p.city || p.town || p.village, p.state].filter(Boolean).join(', ');
-      const row  = document.createElement('div');
+    mapPreds = data; mapHlIdx = -1;
+    D.mapDropdown.innerHTML = '';
+    data.forEach((place, i) => {
+      const parts = place.display_name.split(',');
+      const main  = parts[0].trim();
+      const sub   = [
+        place.address?.city || place.address?.town || place.address?.village,
+        place.address?.state,
+      ].filter(Boolean).join(', ');
+
+      const row = document.createElement('div');
       row.className = 'sug';
       row.innerHTML = `
         <div class="sug-pin">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
             <circle cx="12" cy="10" r="3"/>
           </svg>
@@ -594,38 +1078,61 @@ async function fetchPlaces(q) {
           <div class="sug-main">${esc(main)}</div>
           ${sub ? `<div class="sug-sub">${esc(sub)}</div>` : ''}
         </div>`;
-      row.addEventListener('mousedown', e => { e.preventDefault(); pickPred(i); });
-      D.dropdown.appendChild(row);
+      row.addEventListener('mousedown', ev => { ev.preventDefault(); pickMapPred(i); });
+      D.mapDropdown.appendChild(row);
     });
-    openDrop();
+    openMapDrop();
   } catch (err) {
-    showSpin(false);
-    D.dropdown.innerHTML = '<div class="sug-msg">Search unavailable. Check your connection.</div>';
-    openDrop();
-    console.error('Photon error:', err);
+    D.mapSpinner.classList.remove('on');
+    D.mapDropdown.innerHTML = '<div class="sug-msg">Search unavailable. Check connection.</div>';
+    openMapDrop();
+    console.error('Nominatim search error:', err);
   }
 }
 
-function pickPred(i) {
-  const feat = preds[i]; if (!feat) return;
-  const p   = feat.properties;
-  const lon = feat.geometry.coordinates[0];
-  const lat = feat.geometry.coordinates[1];
-  const name = [p.name, p.city || p.town || p.village, p.state].filter(Boolean).join(', ');
-  D.input.value = name;
-  D.clrBtn.classList.add('on');
-  closeDrop();
-  setDestination({ name, lat, lon });
+function pickMapPred(i) {
+  const place = mapPreds[i]; if (!place) return;
+  const lat   = parseFloat(place.lat);
+  const lon   = parseFloat(place.lon);
+  const name  = place.display_name.split(',').slice(0, 2).join(',').trim();
+
+  D.mapSearchInput.value = name;
+  closeMapDrop();
+
+  /* Fit bounding box if available, else flyTo */
+  if (place.boundingbox) {
+    const bb = place.boundingbox.map(Number);
+    map.fitBounds([[bb[0], bb[2]], [bb[1], bb[3]]], { padding: [28,28], maxZoom: 16 });
+  } else {
+    map.flyTo([lat, lon], 14, { duration: 1.2 });
+  }
+
+  movePendingPin(lat, lon);
+  pendingPin = { lat, lon, name };
+  showPinBar(pendingPin);
 }
 
-function hl(rows) { rows.forEach((r,i) => r.classList.toggle('hi', i === hlIdx)); }
-function openDrop()  { D.dropdown.classList.add('open'); }
-function closeDrop() { D.dropdown.classList.remove('open'); preds=[]; hlIdx=-1; }
-function showSpin(v) { D.spinner.classList.toggle('on', v); }
+function hlMap(rows) { rows.forEach((r,i) => r.classList.toggle('hi', i === mapHlIdx)); }
+function openMapDrop()  { D.mapDropdown.classList.add('open'); }
+function closeMapDrop() { D.mapDropdown.classList.remove('open'); mapPreds = []; mapHlIdx = -1; }
 
-/* ══════════════════════════════════════════════════
-   TASK 2 — COORDINATE TOGGLE + USE
-══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   REVERSE GEOCODE — tap-to-pin human name
+═══════════════════════════════════════════════════ */
+async function reverseGeocode(lat, lon) {
+  try {
+    const url  = `https://nominatim.openstreetmap.org/reverse` +
+      `?format=json&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1`;
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    const data = await res.json();
+    if (data?.display_name) return data.display_name.split(',').slice(0,2).join(',').trim();
+  } catch { /* silent */ }
+  return null;
+}
+
+/* ═══════════════════════════════════════════════════
+   COORDINATE INPUT (manual, collapsible)
+═══════════════════════════════════════════════════ */
 D.coordToggle.addEventListener('click', () => {
   const open = D.coordPanel.classList.toggle('open');
   D.coordToggle.classList.toggle('open', open);
@@ -635,67 +1142,101 @@ D.coordUseBtn.addEventListener('click', () => {
   const lat = parseFloat(D.latInput.value);
   const lon = parseFloat(D.lonInput.value);
 
-  // reset errors
   D.latInput.classList.remove('err');
   D.lonInput.classList.remove('err');
   D.coordErr.classList.remove('on');
 
   let msg = '';
-  if (isNaN(lat) || lat < -90  || lat > 90)   { D.latInput.classList.add('err'); msg = 'Latitude must be between −90 and 90.'; }
-  if (isNaN(lon) || lon < -180 || lon > 180)   { D.lonInput.classList.add('err'); msg = msg || 'Longitude must be between −180 and 180.'; }
+  if (isNaN(lat) || lat < -90  || lat > 90)   { D.latInput.classList.add('err'); msg = 'Latitude must be −90 to 90.'; }
+  if (isNaN(lon) || lon < -180 || lon > 180)   { D.lonInput.classList.add('err'); msg = msg || 'Longitude must be −180 to 180.'; }
   if (msg) { D.coordErr.textContent = msg; D.coordErr.classList.add('on'); return; }
 
-  const name = `Custom: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-  setDestination({ name, lat, lon });
+  const name = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+  map.flyTo([lat, lon], 14, { duration: 1.2 });
+  movePendingPin(lat, lon);
+  pendingPin = { lat, lon, name };
+  showPinBar(pendingPin);
+
   D.coordPanel.classList.remove('open');
   D.coordToggle.classList.remove('open');
   D.latInput.value = '';
   D.lonInput.value = '';
 });
 
-/* ══════════════════════════════════════════════════
-   SET DESTINATION — shared entry point
-══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   SET DESTINATION — single shared entry point
+   Called by: pin confirm button, coord input
+═══════════════════════════════════════════════════ */
 function setDestination({ name, lat, lon }) {
   S.dest = { name, lat, lon };
   console.log('📍 Destination set:', S.dest);
 
+  /* Update destination chip */
   D.chipName.textContent   = name;
   D.chipCoords.textContent = `${lat.toFixed(5)},  ${lon.toFixed(5)}`;
-  D.chip.classList.add('on');
-  D.ringCap.textContent = 'Ready — press Start Alarm below';
+  D.destChip.classList.add('on');
 
-  // highlight dest card
-  $('destCard').classList.add('lit');
+  /* Mark dest card as set */
+  $('destCard').classList.add('set');
 
-  // smooth scroll to tracking section
-  setTimeout(() => $('alarmCard').scrollIntoView({ behavior:'smooth', block:'start' }), 120);
+  /* Hint text in ring */
+  D.ringCaption.textContent = 'Ready — tap Start Alarm when you board';
+  D.ringCaption.className   = 'ring-caption good';
+
+  /* Open popup on pin */
+  if (destMarker) {
+    destMarker.bindPopup(
+      `<strong style="color:#18d9f0">${esc(name)}</strong><br>
+       <span style="font-family:monospace;font-size:.78em">
+         ${lat.toFixed(5)}, ${lon.toFixed(5)}
+       </span>`
+    ).openPopup();
+  }
+
+  /* Scroll to tracking section */
+  setTimeout(() => $('alarmCard').scrollIntoView({ behavior:'smooth', block:'start' }), 140);
 }
 
-/* ══════════════════════════════════════════════════
-   CLEAR / RESET
-══════════════════════════════════════════════════ */
-D.clrBtn.addEventListener('click', clearSearch);
+/* ═══════════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════════ */
 D.chipChange.addEventListener('click', resetAll);
 
-function clearSearch() {
-  D.input.value=''; D.clrBtn.classList.remove('on'); closeDrop(); D.input.focus();
-}
 function resetAll() {
   if (S.tracking) stopTracking();
-  S.dest = null;
-  D.chip.classList.remove('on');
-  $('destCard').classList.remove('lit');
-  D.ringCap.textContent  = 'Set a destination to begin';
-  D.ringDist.textContent = '—';
-  D.ring.classList.remove('tracking','near');
-  clearSearch();
-  window.scrollTo({ top:0, behavior:'smooth' });
+
+  S.dest       = null;
+  pendingPin   = null;
+
+  D.destChip.classList.remove('on');
+  $('destCard').classList.remove('set');
+
+  /* Reset pin bar */
+  D.pinBarEmpty.style.display = '';
+  D.pinBarInfo.classList.remove('on');
+  D.pinConfirmBtn.classList.remove('on');
+
+  /* Remove map marker */
+  if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
+
+  /* Reset ring */
+  D.ringValue.textContent   = '—';
+  D.ringBadge.textContent   = 'straight line';
+  D.ringBadge.classList.remove('road');
+  D.ringCaption.textContent = 'Set a destination above to begin';
+  D.ringCaption.className   = 'ring-caption';
+  D.ring.classList.remove('state-tracking','state-near');
+
+  /* Clear map search input */
+  D.mapSearchInput.value = '';
+  closeMapDrop();
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/* ══════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    THRESHOLD PILLS
-══════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 document.querySelectorAll('.pill').forEach(p => {
   p.addEventListener('click', () => {
     document.querySelectorAll('.pill').forEach(x => x.classList.remove('on'));
@@ -705,143 +1246,253 @@ document.querySelectorAll('.pill').forEach(p => {
   });
 });
 
-/* ══════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    TRACKING
-══════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 D.startBtn.addEventListener('click', () => S.tracking ? stopTracking() : startTracking());
 
 function startTracking() {
-  if (!S.dest)                 { D.ringCap.textContent = 'Please select a destination first.'; return; }
-  if (!navigator.geolocation)  { D.ringCap.textContent = 'GPS not supported by your browser.'; return; }
+  if (!S.dest)                { D.ringCaption.textContent = 'Please set a destination first.'; return; }
+  if (!navigator.geolocation) { D.ringCaption.textContent = 'GPS not supported by your browser.'; return; }
 
-  S.tracking=true; S.fired=false;
+  S.tracking = true; S.fired = false;
   setBtnMode('stop');
-  D.stStatus.textContent = 'Active';
-  D.ringCap.textContent  = 'Acquiring GPS signal…';
-  D.ring.classList.add('tracking');
-  D.tipTxt.textContent   = '✓ Live tracking active. Keep screen on.';
+  D.stStatus.textContent  = 'Active';
+  D.ringCaption.textContent = 'Acquiring GPS signal…';
+  D.ring.classList.add('state-tracking');
+  D.tipTxt.textContent    = '✓ Tracking your journey. Keep this screen open.';
 
-  S.watchId = navigator.geolocation.watchPosition(
-    onPos, onPosErr,
-    { enableHighAccuracy:true, maximumAge:2000, timeout:12000 }
-  );
+  /* Show journey banner */
+  D.journeyBanner.classList.add('on');
+  D.journeyText.textContent = `Tracking your journey to ${S.dest.name.split(',')[0]}…`;
+
+  /* Update header pill */
+  D.hdrDot.classList.add('live');
+  D.hdrStatus.textContent = 'Tracking';
+
+  S.watchId = navigator.geolocation.watchPosition(onPos, onPosErr, {
+    enableHighAccuracy: true, maximumAge: 2000, timeout: 12000,
+  });
 }
 
 function stopTracking() {
-  if (S.watchId !== null) { navigator.geolocation.clearWatch(S.watchId); S.watchId=null; }
+  if (S.watchId !== null) { navigator.geolocation.clearWatch(S.watchId); S.watchId = null; }
   stopBeep();
-  S.tracking=false; S.fired=false;
+
+  S.tracking = false; S.fired = false;
+
   setBtnMode('start');
-  D.stStatus.textContent  = 'Idle';
-  D.stGps.textContent     = '—';
-  D.ringDist.textContent  = '—';
-  D.ringCap.textContent   = S.dest ? 'Ready — press Start Alarm below' : 'Set a destination to begin';
-  D.ring.classList.remove('tracking','near');
-  D.tipTxt.textContent    = 'Keep this tab open and your screen on while traveling.';
-  // Task 3: clear current location
-  D.myLat.textContent='—'; D.myLon.textContent='—';
-  D.myLatBox.classList.remove('on'); D.myLonBox.classList.remove('on');
-  D.liveDot.className='live-dot'; D.liveDot.textContent='not tracking';
+  D.stStatus.textContent    = 'Idle';
+  D.stGps.textContent       = '—';
+  D.ringValue.textContent   = '—';
+  D.ringBadge.textContent   = 'straight line';
+  D.ringBadge.classList.remove('road');
+  D.ring.classList.remove('state-tracking', 'state-near');
+
+  D.ringCaption.textContent = S.dest ? 'Ready — tap Start Alarm when you board' : 'Set a destination above to begin';
+  D.ringCaption.className   = S.dest ? 'ring-caption good' : 'ring-caption';
+
+  D.tipTxt.textContent = 'Keep this tab open and your screen on. The alarm fires automatically.';
+
+  /* Hide journey banner */
+  D.journeyBanner.classList.remove('on');
+
+  /* Reset header */
+  D.hdrDot.classList.remove('live');
+  D.hdrStatus.textContent = 'Ready';
+
+  /* Reset my-location panel */
+  D.myLat.textContent = '—'; D.myLon.textContent = '—';
+  D.myLatBox.classList.remove('live'); D.myLonBox.classList.remove('live');
+  D.liveLabel.textContent = '—';
 }
 
 function setBtnMode(mode) {
-  const s = mode==='stop';
-  D.startBtn.classList.toggle('stop', s);
-  D.btnIco.innerHTML = s ? `<rect x="5" y="5" width="14" height="14" rx="2"/>` : `<path d="M5 3l14 9-14 9V3z"/>`;
-  D.btnIco.setAttribute('viewBox','0 0 24 24');
-  D.btnIco.setAttribute('fill','currentColor');
+  const s = mode === 'stop';
+  D.startBtn.classList.toggle('stop-mode', s);
+  D.btnIco.innerHTML = s
+    ? `<rect x="5" y="5" width="14" height="14" rx="2"/>`
+    : `<path d="M5 3l14 9-14 9V3z"/>`;
+  D.btnIco.setAttribute('viewBox', '0 0 24 24');
+  D.btnIco.setAttribute('fill', 'currentColor');
   D.btnLbl.textContent = s ? 'Stop Alarm' : 'Start Alarm';
 }
 
-/* ══════════════════════════════════════════════════
-   GPS CALLBACK
-══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   GPS POSITION CALLBACK
+═══════════════════════════════════════════════════ */
 function onPos(pos) {
-  const { latitude:lat, longitude:lon, accuracy } = pos.coords;
+  const { latitude: lat, longitude: lon, accuracy } = pos.coords;
 
-  // Task 3: show current location live
+  S.userLat = lat; S.userLon = lon;
+
+  /* Update blue user-location dot on map */
+  updateUserMarker(lat, lon);
+
+  /* My-location panel */
   D.myLat.textContent = lat.toFixed(6);
   D.myLon.textContent = lon.toFixed(6);
-  D.myLatBox.classList.add('on'); D.myLonBox.classList.add('on');
-  D.liveDot.className='live-dot on'; D.liveDot.textContent='live';
-
+  D.myLatBox.classList.add('live'); D.myLonBox.classList.add('live');
+  D.liveLabel.textContent = '● live';
   D.stGps.textContent = `±${Math.round(accuracy)} m`;
 
-  /* ── HAVERSINE ──────────────────────────────────
+  /* ── HAVERSINE straight-line distance ──────────
+     Used for the alarm trigger (GPS proximity).
      a = sin²(Δlat/2) + cos(φ1)·cos(φ2)·sin²(Δlon/2)
-     d = R · 2·atan2(√a, √(1−a))  where R = 6 371 000 m
-  ────────────────────────────────────────────── */
-  const dist = haversine(lat, lon, S.dest.lat, S.dest.lon);
+     d = R · 2·atan2(√a, √(1−a))   R = 6 371 000 m
+  ─────────────────────────────────────────────── */
+  const straightLine = haversine(lat, lon, S.dest.lat, S.dest.lon);
 
-  D.ringDist.textContent = fmtDist(dist);
-  D.ringCap.textContent  = `${fmtDist(dist)} to ${S.dest.name.split(',')[0]}`;
+  /* Show straight-line while we wait for route distance */
+  D.ringValue.textContent = fmtDist(straightLine);
+  D.ringBadge.textContent = 'straight line';
+  D.ringBadge.classList.remove('road');
+  D.ringCaption.textContent = `${fmtDist(straightLine)} to ${S.dest.name.split(',')[0]}`;
 
-  if (dist <= S.threshold * 2.2) {
-    D.ring.classList.add('near'); D.ring.classList.remove('tracking');
+  /* Fetch road distance from OSRM (async, non-blocking) */
+  fetchRoadDistance(lat, lon, S.dest.lat, S.dest.lon);
+
+  /* Ring colour */
+  if (straightLine <= S.threshold * 2.2) {
+    D.ring.classList.add('state-near'); D.ring.classList.remove('state-tracking');
+    D.ringCaption.className = 'ring-caption warn';
   } else {
-    D.ring.classList.add('tracking'); D.ring.classList.remove('near');
+    D.ring.classList.add('state-tracking'); D.ring.classList.remove('state-near');
+    D.ringCaption.className = 'ring-caption';
   }
 
-  console.log(`📡 ${lat.toFixed(5)},${lon.toFixed(5)} | ${Math.round(dist)} m`);
+  console.log(`📡 pos: ${lat.toFixed(5)}, ${lon.toFixed(5)} | straight: ${Math.round(straightLine)} m`);
 
-  if (dist <= S.threshold && !S.fired && S.tracking) {
-    S.fired=true; triggerAlarm();
+  /* ── ALARM TRIGGER (always uses straight-line for accuracy) */
+  if (straightLine <= S.threshold && !S.fired && S.tracking) {
+    S.fired = true;
+    triggerAlarm();
   }
 }
 
 function onPosErr(err) {
-  const m = { 1:'Location permission denied. Enable it in browser settings.', 2:'GPS unavailable. Try moving outdoors.', 3:'GPS timed out. Check your signal.' };
-  D.ringCap.textContent  = m[err.code] || 'Unknown GPS error.';
-  D.stStatus.textContent = 'Error';
+  const msgs = {
+    1: 'Location permission denied. Enable it in browser settings.',
+    2: 'GPS signal unavailable. Move to an open area.',
+    3: 'GPS timed out. Check your signal and retry.',
+  };
+  D.ringCaption.textContent = msgs[err.code] || 'Unknown GPS error.';
+  D.ringCaption.className   = 'ring-caption warn';
+  D.stStatus.textContent    = 'GPS Error';
   console.error('GPS error:', err.code);
   stopTracking();
 }
 
-/* ══════════════════════════════════════════════════
-   HAVERSINE
-══════════════════════════════════════════════════ */
-function haversine(lat1,lon1,lat2,lon2) {
-  const R=6_371_000, r=d=>d*Math.PI/180;
-  const dL=r(lat2-lat1), dO=r(lon2-lon1);
-  const a=Math.sin(dL/2)**2+Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dO/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+/* ═══════════════════════════════════════════════════
+   ROAD DISTANCE  — OSRM (free, open source)
+   ─────────────────────────────────────────────────
+   Calls the public OSRM demo server to get real
+   road distance. Result is displayed as "~X km road"
+   alongside the ring. The alarm still uses haversine
+   (GPS proximity) for reliability.
+
+   OSRM endpoint:
+     https://router.project-osrm.org/route/v1/driving/
+     {lon1},{lat1};{lon2},{lat2}?overview=false
+═══════════════════════════════════════════════════ */
+let osrmTimer    = null;   // debounce rapid GPS updates
+let lastOsrmCall = 0;      // timestamp — throttle to max 1 call / 15 s
+
+async function fetchRoadDistance(lat1, lon1, lat2, lon2) {
+  const now = Date.now();
+  if (now - lastOsrmCall < 15000) return;   // throttle
+
+  clearTimeout(osrmTimer);
+  osrmTimer = setTimeout(async () => {
+    lastOsrmCall = Date.now();
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/` +
+        `${lon1},${lat1};${lon2},${lat2}?overview=false`;
+      const res  = await fetch(url, { signal: AbortSignal.timeout(7000) });
+      const data = await res.json();
+
+      if (data?.code === 'Ok' && data.routes?.[0]) {
+        const roadM = data.routes[0].distance;  // metres
+        /* Only update display if still tracking + same dest */
+        if (!S.tracking || !S.dest) return;
+        D.ringValue.textContent   = fmtDist(roadM);
+        D.ringBadge.textContent   = '~road distance';
+        D.ringBadge.classList.add('road');
+        D.ringCaption.textContent = `~${fmtDist(roadM)} by road to ${S.dest.name.split(',')[0]}`;
+        console.log(`🛣️ road dist: ${Math.round(roadM)} m`);
+      }
+    } catch {
+      /* OSRM unavailable — silently keep showing straight-line */
+    }
+  }, 800);
 }
 
-/* ══════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
+   HAVERSINE  (used for alarm trigger proximity check)
+═══════════════════════════════════════════════════ */
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6_371_000, r = d => d * Math.PI / 180;
+  const dL = r(lat2-lat1), dO = r(lon2-lon1);
+  const a  = Math.sin(dL/2)**2 + Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dO/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+/* ═══════════════════════════════════════════════════
    ALARM
-══════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 function triggerAlarm() {
-  D.alarmDest.textContent=S.dest.name; D.overlay.classList.add('on');
-  if(navigator.vibrate) navigator.vibrate([600,200,600,200,1200]);
+  D.alarmDest.textContent = S.dest.name;
+  D.overlay.classList.add('on');
+  if (navigator.vibrate) navigator.vibrate([600, 200, 600, 200, 1200]);
   startBeep();
 }
-function dismissAlarm() { D.overlay.classList.remove('on'); stopBeep(); stopTracking(); }
+
+function dismissAlarm() {
+  D.overlay.classList.remove('on');
+  stopBeep();
+  stopTracking();
+}
 D.dismissBtn.addEventListener('click', dismissAlarm);
 
-/* ══════════════════════════════════════════════════
-   WEB AUDIO BEEP (880 Hz square wave)
-══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   WEB AUDIO BEEP  (880 Hz square wave, no audio file)
+═══════════════════════════════════════════════════ */
 function startBeep() {
-  try { S.audioCtx=new(window.AudioContext||window.webkitAudioContext)(); oneBeep(); S.beepIv=setInterval(oneBeep,850); }
-  catch(e){console.warn('Audio:',e);}
+  try {
+    S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    oneBeep();
+    S.beepIv = setInterval(oneBeep, 850);
+  } catch(e) { console.warn('Audio:', e); }
 }
 function oneBeep() {
-  if(!S.audioCtx) return;
-  const o=S.audioCtx.createOscillator(), g=S.audioCtx.createGain();
+  if (!S.audioCtx) return;
+  const o = S.audioCtx.createOscillator();
+  const g = S.audioCtx.createGain();
   o.connect(g); g.connect(S.audioCtx.destination);
-  o.type='square'; o.frequency.setValueAtTime(880,S.audioCtx.currentTime);
-  g.gain.setValueAtTime(0.38,S.audioCtx.currentTime);
-  g.gain.exponentialRampToValueAtTime(.001,S.audioCtx.currentTime+.42);
-  o.start(S.audioCtx.currentTime); o.stop(S.audioCtx.currentTime+.42);
+  o.type = 'square';
+  o.frequency.setValueAtTime(880, S.audioCtx.currentTime);
+  g.gain.setValueAtTime(0.38, S.audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, S.audioCtx.currentTime + 0.42);
+  o.start(S.audioCtx.currentTime);
+  o.stop(S.audioCtx.currentTime + 0.42);
 }
 function stopBeep() {
-  clearInterval(S.beepIv); S.beepIv=null;
-  if(S.audioCtx){S.audioCtx.close().catch(()=>{}); S.audioCtx=null;}
+  clearInterval(S.beepIv); S.beepIv = null;
+  if (S.audioCtx) { S.audioCtx.close().catch(()=>{}); S.audioCtx = null; }
 }
 
-/* ── UTILS ───────────────────────────────────────── */
-function fmtDist(m) { if(m==null||isNaN(m)) return '—'; return m>=1000?(m/1000).toFixed(1)+' km':Math.round(m)+' m'; }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+/* ═══════════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════════ */
+function fmtDist(m) {
+  if (m == null || isNaN(m)) return '—';
+  return m >= 1000 ? (m / 1000).toFixed(1) + ' km' : Math.round(m) + ' m';
+}
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 </script>
 </body>
 </html>
