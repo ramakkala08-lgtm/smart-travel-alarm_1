@@ -607,6 +607,51 @@ body {
 @media(max-width:340px) {
   .pills { gap: 5px; } .pill { padding: 6px 11px; font-size: .76rem; }
 }
+
+/* ═══════════════════════════════════════════════════
+   PERMANENT FEEDBACK SECTION
+═══════════════════════════════════════════════════ */
+.prod-fb {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: var(--r2);
+  padding: 24px 20px;
+  margin-top: 24px;
+  animation: fade-up 0.5s var(--ease) both;
+}
+.fb-header h3 { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.01em; }
+.fb-header p { font-size: 0.78rem; color: var(--sub); margin-top: 4px; margin-bottom: 20px; }
+
+.fb-content { animation: fb-slide-in 0.4s var(--ease) both; }
+@keyframes fb-slide-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.fb-q { font-size: 0.92rem; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+.fb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fb-grid button {
+  background: var(--s2); border: 1.5px solid var(--b2);
+  color: var(--text); padding: 12px 14px; border-radius: var(--r);
+  font-size: 0.84rem; font-weight: 600; text-align: left;
+  transition: all 0.2s;
+}
+.fb-grid button:hover { background: var(--s3); border-color: var(--cyan); transform: translateY(-1px); }
+.fb-grid button:active { transform: scale(0.98); }
+
+.fb-cta { font-size: 0.9rem; font-weight: 600; color: var(--sub); margin-bottom: 12px; }
+.fb-wa-btn {
+  width: 100%; padding: 14px; border-radius: var(--r);
+  background: #25d366; color: #fff; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 0 4px 15px rgba(37,211,102,0.25);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.fb-wa-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,211,102,0.35); }
+
+@media(max-width:440px) {
+  .fb-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -803,7 +848,57 @@ body {
     </p>
   </div>
 
+  <!-- ═══════════════════════════════════════════
+       PROFESSIONAL FEEDBACK SECTION (NEW)
+  ═══════════════════════════════════════════ -->
+  <section id="prodFeedback" class="prod-fb" style="display:none;">
+    <div class="fb-header">
+      <h3>Quick Travel Experience Check ✨</h3>
+      <p>Help us improve your journey experience (takes 5 seconds)</p>
+    </div>
+
+    <!-- Step 1: Comfort Level -->
+    <div id="fbStep1" class="fb-content">
+      <p class="fb-q">How did this feel while using?</p>
+      <div class="fb-grid">
+        <button onclick="FB.handle(1, 'Super smooth')">⚡ Super smooth</button>
+        <button onclick="FB.handle(1, 'Good enough')">👍 Good enough</button>
+        <button onclick="FB.handle(1, 'Needs improvement')">🛠 Needs improvement</button>
+        <button onclick="FB.handle(1, 'Confusing')">😕 Confusing</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Usage Intent -->
+    <div id="fbStep2" class="fb-content" style="display:none;">
+      <p class="fb-q">Would you use this in your next journey?</p>
+      <div class="fb-grid">
+        <button onclick="FB.handle(2, 'Definitely yes')">🔥 Definitely yes</button>
+        <button onclick="FB.handle(2, 'Maybe')">🤔 Maybe</button>
+        <button onclick="FB.handle(2, 'No')">❌ No</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Specific Issues -->
+    <div id="fbStep3" class="fb-content" style="display:none;">
+      <p class="fb-q">What felt off?</p>
+      <div class="fb-grid">
+        <button onclick="FB.handle(3, 'Location accuracy')">📍 Location accuracy</button>
+        <button onclick="FB.handle(3, 'Timing of alert')">⏰ Timing of alert</button>
+        <button onclick="FB.handle(3, 'UI / usability')">🎨 UI / usability</button>
+        <button onclick="FB.handle(3, 'Performance / speed')">🐢 Performance / speed</button>
+      </div>
+    </div>
+
+    <!-- Final: WhatsApp CTA -->
+    <div id="fbFinal" class="fb-content" style="display:none;">
+      <p class="fb-cta">Share your experience here  👇</p>
+      <button class="fb-wa-btn" onclick="FB.whatsapp()">
+        📲 Share feedback on WhatsApp
+      </button>
+    </div>
+  </section>
 </main>
+
 
 <!-- ═══════════════════════════════════════════════
      ALARM OVERLAY
@@ -1259,6 +1354,14 @@ document.querySelectorAll('.pill').forEach(p => {
 D.startBtn.addEventListener('click', () => S.tracking ? stopTracking() : startTracking());
 
 function startTracking() {
+  if (typeof gtag === 'function') {
+    gtag('event', 'alarm_started', { event_category: 'engagement' });
+  }
+  console.log("[GA EVENT] alarm_started");
+
+  // Show permanent feedback section on interaction
+  if (window.FB) FB.show();
+
   if (!S.dest)                { D.ringCaption.textContent = 'Please set a destination first.'; return; }
   if (!navigator.geolocation) { D.ringCaption.textContent = 'GPS not supported by your browser.'; return; }
 
@@ -1448,6 +1551,10 @@ function haversine(lat1, lon1, lat2, lon2) {
    ALARM
 ═══════════════════════════════════════════════════ */
 function triggerAlarm() {
+  if (typeof gtag === 'function') {
+    gtag('event', 'alarm_triggered', { event_category: 'success' });
+  }
+  console.log("[GA EVENT] alarm_triggered");
   D.alarmDest.textContent = S.dest.name;
   D.overlay.classList.add('on');
   if (navigator.vibrate) navigator.vibrate([600, 200, 600, 200, 1200]);
@@ -1500,6 +1607,73 @@ function esc(s) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+/* ═══════════════════════════════════════════════════
+   MODERN FEEDBACK SYSTEM (FB)
+═══════════════════════════════════════════════════ */
+const FB = (() => {
+  const section = $('prodFeedback');
+  const steps = ['fbStep1', 'fbStep2', 'fbStep3', 'fbFinal'];
+
+  function track(evt, lbl) {
+    if (typeof gtag === 'function') {
+      gtag('event', evt, { 
+        event_category: 'feedback', 
+        event_label: lbl 
+      });
+    }
+    console.log(`[GA EVENT] ${evt}`, lbl);
+  }
+
+  function showStep(id) {
+    steps.forEach(s => {
+      const el = $(s);
+      if (el) el.style.display = (s === id) ? 'block' : 'none';
+    });
+  }
+
+  return {
+    init: () => {
+      // Auto-show after 10s if not already shown by interaction
+      setTimeout(() => {
+        if (section && section.style.display === 'none') {
+          section.style.display = 'block';
+        }
+      }, 10000);
+    },
+    show: () => {
+      if (section && section.style.display === 'none') {
+        section.style.display = 'block';
+      }
+    },
+    handle: (step, choice) => {
+      if (step === 1) {
+        track('comfort_level', choice);
+        showStep('fbStep2');
+      } else if (step === 2) {
+        track('usage_intent', choice);
+        if (choice === 'Maybe' || choice === 'No') {
+          showStep('fbStep3');
+        } else {
+          showStep('fbFinal');
+        }
+      } else if (step === 3) {
+        track('issue_type', choice);
+        showStep('fbFinal');
+      }
+    },
+    whatsapp: () => {
+      track('whatsapp_click', 'Share Feedback');
+      const msg = encodeURIComponent(`Hey! I used your Smart Travel Alarm.
+
+My feedback is `);
+      window.open(`https://wa.me/919182955345?text=${msg}`, '_blank');
+    }
+  };
+})();
+
+// Start trigger
+FB.init();
 </script>
 </body>
 </html>
